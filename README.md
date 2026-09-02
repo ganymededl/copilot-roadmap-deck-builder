@@ -10,7 +10,7 @@ feeds into a PowerPoint deck for any date range you pick.
 1. Pick a date range from a calendar (January 2023 through two years ahead).
 2. Choose what the deck covers:
    - **Activity in the range** &mdash; items published or updated between your dates.
-     This mirrors the monthly PRAI look-back deck.
+     This is the usual choice for a monthly look-back update.
    - **Releases in the range** &mdash; roadmap items whose target release month falls
      between your dates. Use this for a forward-looking view.
 3. Narrow by keyword (defaults to `Copilot`) and by source.
@@ -21,9 +21,9 @@ device &mdash; nothing is uploaded.
 
 ## Not an official Microsoft deliverable
 
-This is assembled from public feeds. It does not use ESXP, does not require a
-dispatch, and is not the official PRAI deck. Verify anything customer-facing
-against the official source before sending it.
+This is assembled from public feeds. It is an independent summary of published
+information, not an official Microsoft roadmap deck. Verify anything
+customer-facing against the official source before sending it.
 
 ## How the data gets here
 

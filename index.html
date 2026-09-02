@@ -182,7 +182,7 @@
           <input type="radio" name="mode" value="activity" checked />
           <span>
             <span class="t">Activity in the range &mdash; what changed</span>
-            <span class="d">Items published or updated between your dates. This mirrors the monthly PRAI deck and is the usual choice for a look-back update.</span>
+            <span class="d">Items published or updated between your dates. This is the usual choice for a monthly look-back update.</span>
           </span>
         </label>
         <label class="radio-opt">
@@ -264,8 +264,8 @@
     <p class="disclaimer">
       <strong>Not an official Microsoft deliverable.</strong>
       This deck is assembled from the public Microsoft 365 Roadmap and Message Center feeds.
-      It does not use ESXP, does not require a dispatch, and is not the official PRAI deck.
-      Check anything customer-facing against the official source before you send it.
+      It is an independent summary of published information, not an official Microsoft
+      roadmap deck. Check anything customer-facing against the official source before you send it.
     </p>
     <ul class="notes" style="margin-top:1rem">
       <li><strong>New</strong> means the item was first published inside your date range.</li>
@@ -659,7 +659,7 @@
     sN.background = { color: NAVY };
     sN.addText("Sources & Notes", { x: M, y: 0.6, w: W - M * 2, h: 0.7, fontFace: "Georgia", fontSize: 30, bold: true, color: WHITE, margin: 0 });
     var bullets = data.sources.concat([
-      "Built from public Microsoft 365 Roadmap and Message Center data. This is not an official Microsoft PRAI deliverable and does not use ESXP.",
+      "Built from public Microsoft 365 Roadmap and Message Center data. This is an independent summary of published information, not an official Microsoft roadmap deck.",
       forward
         ? "Coverage: roadmap items with a target release month inside the selected range."
         : "Coverage: items published or updated inside the selected range. \"New\" means first published in the range; \"Updated\" means an older item changed in the range.",
