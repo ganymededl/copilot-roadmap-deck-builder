@@ -3,7 +3,7 @@
 A static web page that turns the public Microsoft 365 Roadmap and Message Center
 feeds into a PowerPoint deck for any date range you pick.
 
-**Live page:** see the Pages URL in this repository's settings.
+**Live page:** https://ganymededl.github.io/copilot-roadmap-deck-builder/
 
 ## What it does
 
