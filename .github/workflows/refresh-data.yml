@@ -1,0 +1,55 @@
+name: Refresh roadmap data
+
+on:
+  schedule:
+    # 06:15 UTC daily
+    - cron: "15 6 * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fetch-data.mjs"
+      - ".github/workflows/refresh-data.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Fetch roadmap + Message Center data
+        run: node scripts/fetch-data.mjs
+
+      - name: Verify output
+        run: |
+          test -s data/roadmap.json
+          node -e "
+            const d = require('./data/roadmap.json');
+            if (!Array.isArray(d.items) || d.items.length < 500) {
+              console.error('Unexpectedly small dataset:', d.items && d.items.length);
+              process.exit(1);
+            }
+            console.log('OK:', d.items.length, 'items');
+          "
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- data/roadmap.json; then
+            echo "No data changes."
+          else
+            git add data/roadmap.json
+            git commit -m "chore: refresh roadmap data ($(date -u +%Y-%m-%d))"
+            git push
+          fi

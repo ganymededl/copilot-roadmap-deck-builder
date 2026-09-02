@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Copilot Roadmap Deck Builder</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e2761'/%3E%3Cpath d='M8 21V11h3.2l2.6 6.2L16.4 11h3.2v10h-2.3v-6.6l-2.2 5.2h-1.6l-2.2-5.2V21z' fill='%23cadcfc'/%3E%3C/svg%3E" />
+<meta name="description" content="Pick a date range and generate a Microsoft 365 Copilot product roadmap deck from public Microsoft 365 Roadmap and Message Center data." />
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<style>
+  :root {
+    --navy: #1e2761;
+    --navy-deep: #161d4a;
+    --ice: #cadcfc;
+    --charcoal: #212121;
+    --muted: #4a5a75;
+    --line: #d7dcea;
+    --surface: #f4f6fb;
+    --ok: #1b5e20;
+    --warn: #8a4b00;
+    --err: #a51c1c;
+    --focus: #0b57d0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--charcoal);
+    background: #fff;
+    line-height: 1.5;
+  }
+  a { color: #12419b; }
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+  .skip {
+    position: absolute; left: -9999px; top: 0;
+    background: #fff; color: var(--navy); padding: .6rem 1rem; z-index: 100;
+  }
+  .skip:focus { left: .5rem; top: .5rem; }
+
+  header {
+    background: var(--navy);
+    color: #fff;
+    padding: 1.75rem 1.5rem;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  header .eyebrow {
+    font-size: .8rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--ice); margin: 0 0 .35rem;
+  }
+  header h1 { font-size: 1.85rem; margin: 0 0 .5rem; line-height: 1.2; }
+  header p { margin: 0; color: #dfe7fb; max-width: 62ch; font-size: .95rem; }
+
+  main { padding: 1.75rem 1.5rem 4rem; }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.25rem 1.35rem 1.4rem;
+    margin-bottom: 1.5rem;
+    background: #fff;
+  }
+  .panel > h2 {
+    font-size: 1.05rem; margin: 0 0 .25rem; color: var(--navy);
+  }
+  .panel > .hint { margin: 0 0 1.1rem; font-size: .88rem; color: var(--muted); }
+
+  fieldset { border: 0; margin: 0; padding: 0; }
+  legend { font-weight: 600; font-size: .95rem; padding: 0; margin-bottom: .5rem; }
+
+  .grid { display: grid; gap: 1rem 1.25rem; }
+  @media (min-width: 640px) { .grid.cols-2 { grid-template-columns: 1fr 1fr; } }
+
+  label.field { display: block; font-weight: 600; font-size: .9rem; margin-bottom: .3rem; }
+  .field-hint { font-size: .8rem; color: var(--muted); font-weight: 400; display: block; margin-top: .15rem; }
+
+  input[type="date"], input[type="text"], select {
+    width: 100%;
+    padding: .6rem .7rem;
+    font: inherit;
+    font-size: .95rem;
+    border: 1px solid #9aa4bd;
+    border-radius: 6px;
+    background: #fff;
+    color: var(--charcoal);
+    min-height: 44px;
+  }
+
+  .radio-row { display: flex; flex-direction: column; gap: .55rem; }
+  .radio-opt {
+    display: flex; gap: .6rem; align-items: flex-start;
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: .7rem .85rem; cursor: pointer; background: #fff;
+  }
+  .radio-opt:hover { background: var(--surface); }
+  .radio-opt input { margin: .25rem 0 0; width: 18px; height: 18px; flex: none; accent-color: var(--navy); }
+  .radio-opt .t { font-weight: 600; font-size: .92rem; display: block; }
+  .radio-opt .d { font-size: .84rem; color: var(--muted); display: block; }
+
+  .presets { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .1rem; }
+  .presets button {
+    font: inherit; font-size: .85rem;
+    background: var(--surface); color: var(--navy);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: .45rem .9rem; cursor: pointer; min-height: 38px;
+  }
+  .presets button:hover { background: #e6ebf8; border-color: #b9c4de; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-top: .25rem; }
+  button.primary {
+    font: inherit; font-weight: 600; font-size: 1rem;
+    background: var(--navy); color: #fff;
+    border: 1px solid var(--navy); border-radius: 8px;
+    padding: .75rem 1.5rem; cursor: pointer; min-height: 48px;
+  }
+  button.primary:hover:not(:disabled) { background: var(--navy-deep); }
+  button.primary:disabled { background: #6d7590; border-color: #6d7590; cursor: not-allowed; }
+
+  .status {
+    font-size: .9rem; padding: .75rem .9rem; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--charcoal);
+  }
+  .status[data-tone="ok"]   { border-color: #a7cfa9; background: #eef7ee; color: var(--ok); }
+  .status[data-tone="warn"] { border-color: #e0bd8a; background: #fdf5e9; color: var(--warn); }
+  .status[data-tone="err"]  { border-color: #e0a2a2; background: #fceded; color: var(--err); }
+
+  .summary-line { font-size: 1rem; font-weight: 600; margin: 0 0 .9rem; }
+  .summary-line .num { color: var(--navy); }
+
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  caption { text-align: left; font-size: .85rem; color: var(--muted); padding-bottom: .5rem; }
+  th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--line); }
+  th { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+
+  .notes { font-size: .88rem; color: var(--muted); }
+  .notes li { margin-bottom: .45rem; }
+
+  .disclaimer {
+    border-left: 4px solid var(--navy);
+    background: var(--surface);
+    padding: .9rem 1rem;
+    font-size: .88rem;
+    border-radius: 0 8px 8px 0;
+  }
+  .disclaimer strong { color: var(--navy); }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header>
+  <div class="wrap">
+    <p class="eyebrow">Microsoft 365 Copilot</p>
+    <h1>Product Roadmap Deck Builder</h1>
+    <p>Pick a date range, review what matched, and generate a PowerPoint deck in your browser. Nothing is uploaded &mdash; the deck is built locally from public roadmap data.</p>
+  </div>
+</header>
+
+<main id="main">
+<div class="wrap">
+
+  <div class="panel" role="region" aria-labelledby="h-load">
+    <h2 id="h-load">Data</h2>
+    <p class="hint">Refreshed daily from the Microsoft 365 Roadmap and Message Center.</p>
+    <p class="status" id="dataStatus" role="status" aria-live="polite">Loading roadmap data&hellip;</p>
+  </div>
+
+  <div class="panel" role="region" aria-labelledby="h-range">
+    <h2 id="h-range">1. Choose your range</h2>
+    <p class="hint">Dates are selectable from January 2023 through two years from today.</p>
+
+    <fieldset style="margin-bottom:1.25rem">
+      <legend>What should the deck cover?</legend>
+      <div class="radio-row">
+        <label class="radio-opt">
+          <input type="radio" name="mode" value="activity" checked />
+          <span>
+            <span class="t">Activity in the range &mdash; what changed</span>
+            <span class="d">Items published or updated between your dates. This mirrors the monthly PRAI deck and is the usual choice for a look-back update.</span>
+          </span>
+        </label>
+        <label class="radio-opt">
+          <input type="radio" name="mode" value="release" />
+          <span>
+            <span class="t">Releases in the range &mdash; what is coming</span>
+            <span class="d">Roadmap items whose target release month falls between your dates. Use this for a forward-looking view; Message Center items are excluded because they carry no target month.</span>
+          </span>
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="grid cols-2">
+      <div>
+        <label class="field" for="startDate">Start date</label>
+        <input type="date" id="startDate" name="startDate" />
+      </div>
+      <div>
+        <label class="field" for="endDate">End date</label>
+        <input type="date" id="endDate" name="endDate" />
+      </div>
+    </div>
+
+    <div class="presets" style="margin-top:1rem" role="group" aria-label="Quick date range presets">
+      <button type="button" data-preset="lastMonth">Last month</button>
+      <button type="button" data-preset="thisMonth">This month</button>
+      <button type="button" data-preset="last90">Last 90 days</button>
+      <button type="button" data-preset="lastQuarter">Last quarter</button>
+      <button type="button" data-preset="next6">Next 6 months</button>
+      <button type="button" data-preset="next12">Next 12 months</button>
+      <button type="button" data-preset="next24">Next 24 months</button>
+    </div>
+  </div>
+
+  <div class="panel" role="region" aria-labelledby="h-filter">
+    <h2 id="h-filter">2. Narrow the topic</h2>
+    <p class="hint">An item matches if any keyword appears in its product, title, or description.</p>
+    <div class="grid cols-2">
+      <div>
+        <label class="field" for="keywords">
+          Keywords
+          <span class="field-hint">Comma separated. Leave as-is for a Copilot-only deck.</span>
+        </label>
+        <input type="text" id="keywords" value="Copilot" autocomplete="off" />
+      </div>
+      <div>
+        <label class="field" for="sourceFilter">
+          Sources
+          <span class="field-hint">Message Center items add admin-facing change notices.</span>
+        </label>
+        <select id="sourceFilter">
+          <option value="both">Roadmap and Message Center</option>
+          <option value="roadmap">Roadmap only</option>
+          <option value="messages">Message Center only</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" role="region" aria-labelledby="h-preview">
+    <h2 id="h-preview">3. Preview</h2>
+    <p class="hint">Updates as you change the settings above.</p>
+    <div id="preview" aria-live="polite">
+      <p class="summary-line">Waiting for data&hellip;</p>
+    </div>
+  </div>
+
+  <div class="panel" role="region" aria-labelledby="h-build">
+    <h2 id="h-build">4. Build the deck</h2>
+    <p class="hint">Your browser will ask where to save the file. Generation happens on this device.</p>
+    <div class="actions">
+      <button type="button" class="primary" id="buildBtn" disabled>Generate PowerPoint</button>
+      <span class="status" id="buildStatus" role="status" aria-live="polite">Waiting for data&hellip;</span>
+    </div>
+  </div>
+
+  <div class="panel" role="region" aria-labelledby="h-about">
+    <h2 id="h-about">About this tool</h2>
+    <p class="disclaimer">
+      <strong>Not an official Microsoft deliverable.</strong>
+      This deck is assembled from the public Microsoft 365 Roadmap and Message Center feeds.
+      It does not use ESXP, does not require a dispatch, and is not the official PRAI deck.
+      Check anything customer-facing against the official source before you send it.
+    </p>
+    <ul class="notes" style="margin-top:1rem">
+      <li><strong>New</strong> means the item was first published inside your date range.</li>
+      <li><strong>Updated</strong> means an older item was modified inside your date range.</li>
+      <li>Data is refreshed once a day by a scheduled job in this repository.</li>
+      <li>Save location prompting uses the File System Access API. In browsers without it, the file downloads to your default folder instead.</li>
+    </ul>
+    <p class="notes" id="freshness"></p>
+  </div>
+
+</div>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------- constants
+  var NAVY = "1E2761", ICE = "CADCFC", WHITE = "FFFFFF", CHARCOAL = "212121", MUTED = "5A6B87";
+  var STATUS_COLORS = {
+    "New Feature": "2E7D32", "In development": "F9A825", "Rolling out": "1565C0",
+    "Launched": "00897B", "Retirement": "C62828", "Major Change": "EF6C00",
+    "Cancelled": "8E24AA", "Update": "616161"
+  };
+
+  // Section rules, first match wins. Mirrors the PRAI deck's section order.
+  var SECTION_RULES = [
+    ["Copilot in Microsoft Teams", ["Microsoft Teams"]],
+    ["Copilot in Outlook", ["Outlook"]],
+    ["Copilot in Word, Excel, PowerPoint & OneNote", ["Word", "Excel", "PowerPoint", "OneNote"]],
+    ["Copilot Studio & Custom Agents", ["Microsoft Copilot Studio", "Power Platform", "Power Automate", "Power Apps", "Microsoft Dataverse"]],
+    ["AI & Data Readiness (Security, Compliance, Governance)", ["Purview", "Defender", "Entra", "Intune", "Information Protection"]],
+    ["Copilot Across Microsoft 365 Apps", ["SharePoint", "OneDrive", "Loop", "Planner", "Viva", "Whiteboard", "Places", "Forms", "Bookings", "To Do"]],
+    ["Copilot Chat & Core Experiences", ["Microsoft Copilot (Microsoft 365)", "Microsoft 365 Copilot Chat", "Microsoft 365"]]
+  ];
+  var FALLBACK_SECTION = "Other Updates";
+
+  // ------------------------------------------------------------------ helpers
+  var $ = function (id) { return document.getElementById(id); };
+
+  function iso(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function parseISO(s) {
+    var p = String(s).split("-");
+    return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  }
+  function fmtLong(s) {
+    return parseISO(s).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  }
+  function truncate(t, max) {
+    if (!t) return "";
+    var c = String(t).replace(/\s+/g, " ").trim();
+    return c.length > max ? c.slice(0, max - 1).replace(/\s+$/, "") + "\u2026" : c;
+  }
+  function sectionFor(text) {
+    for (var i = 0; i < SECTION_RULES.length; i++) {
+      var needles = SECTION_RULES[i][1];
+      for (var j = 0; j < needles.length; j++) {
+        if (text.indexOf(needles[j]) !== -1) return SECTION_RULES[i][0];
+      }
+    }
+    return FALLBACK_SECTION;
+  }
+  function sectionRank(name) {
+    for (var i = 0; i < SECTION_RULES.length; i++) if (SECTION_RULES[i][0] === name) return i;
+    return 99;
+  }
+
+  // --------------------------------------------------------------- date setup
+  var today = new Date();
+  var MIN_DATE = "2023-01-01";
+  var MAX_DATE = iso(new Date(today.getFullYear() + 2, today.getMonth(), today.getDate()));
+
+  var startEl = $("startDate"), endEl = $("endDate");
+  [startEl, endEl].forEach(function (el) { el.min = MIN_DATE; el.max = MAX_DATE; });
+
+  function applyPreset(name) {
+    var y = today.getFullYear(), m = today.getMonth(), s, e;
+    if (name === "lastMonth") { s = new Date(y, m - 1, 1); e = new Date(y, m, 0); }
+    else if (name === "thisMonth") { s = new Date(y, m, 1); e = new Date(y, m + 1, 0); }
+    else if (name === "last90") { s = new Date(y, m, today.getDate() - 90); e = today; }
+    else if (name === "lastQuarter") {
+      var qs = Math.floor(m / 3) * 3 - 3;
+      s = new Date(y, qs, 1); e = new Date(y, qs + 3, 0);
+    }
+    else if (name === "next6") { s = new Date(y, m, 1); e = new Date(y, m + 6, 0); }
+    else if (name === "next12") { s = new Date(y, m, 1); e = new Date(y, m + 12, 0); }
+    else if (name === "next24") { s = new Date(y, m, 1); e = new Date(y, m + 24, 0); }
+    startEl.value = iso(s); endEl.value = iso(e);
+    // Forward-looking presets imply the release view.
+    if (name.indexOf("next") === 0) {
+      document.querySelector('input[name="mode"][value="release"]').checked = true;
+    }
+    refresh();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-preset]"), function (b) {
+    b.addEventListener("click", function () { applyPreset(b.getAttribute("data-preset")); });
+  });
+
+  applyPreset("lastMonth");
+
+  // ------------------------------------------------------------- data loading
+  var DATA = null;
+
+  fetch("data/roadmap.json", { cache: "no-cache" })
+    .then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(function (json) {
+      DATA = json;
+      var when = new Date(json.generatedAt);
+      setStatus($("dataStatus"), "ok",
+        json.count.toLocaleString() + " items loaded \u2014 " +
+        json.roadmapCount.toLocaleString() + " roadmap, " +
+        json.messageCount.toLocaleString() + " Message Center.");
+      $("freshness").textContent = "Dataset last refreshed " + when.toLocaleString() + ".";
+      $("buildBtn").disabled = false;
+      setStatus($("buildStatus"), null, "Ready.");
+      refresh();
+    })
+    .catch(function (err) {
+      setStatus($("dataStatus"), "err",
+        "Could not load data/roadmap.json (" + err.message + "). If you opened this file directly from disk, serve it over http instead.");
+      setStatus($("buildStatus"), "err", "Data unavailable.");
+    });
+
+  function setStatus(el, tone, msg) {
+    el.textContent = msg;
+    if (tone) el.setAttribute("data-tone", tone); else el.removeAttribute("data-tone");
+  }
+
+  // ---------------------------------------------------------------- filtering
+  function currentMode() {
+    return document.querySelector('input[name="mode"]:checked').value;
+  }
+
+  function build() {
+    var startStr = startEl.value, endStr = endEl.value;
+    if (!DATA || !startStr || !endStr) return null;
+
+    var start = parseISO(startStr);
+    var end = parseISO(endStr);
+    end.setHours(23, 59, 59, 999);
+    if (start > end) return { error: "The start date is after the end date." };
+
+    var mode = currentMode();
+    var srcFilter = $("sourceFilter").value;
+    var keywords = $("keywords").value.split(",")
+      .map(function (k) { return k.trim().toLowerCase(); })
+      .filter(Boolean);
+
+    var startMonth = startStr.slice(0, 7), endMonth = endStr.slice(0, 7);
+    var matched = [];
+
+    for (var i = 0; i < DATA.items.length; i++) {
+      var it = DATA.items[i];
+
+      if (srcFilter === "roadmap" && it.kind !== "Roadmap") continue;
+      if (srcFilter === "messages" && it.kind !== "Message Center") continue;
+
+      if (keywords.length) {
+        var hay = (it.product + " " + it.title + " " + it.description).toLowerCase();
+        var hit = false;
+        for (var k = 0; k < keywords.length; k++) {
+          if (hay.indexOf(keywords[k]) !== -1) { hit = true; break; }
+        }
+        if (!hit) continue;
+      }
+
+      var isNew = false;
+      if (mode === "release") {
+        if (!it.releaseMonth) continue;
+        if (it.releaseMonth < startMonth || it.releaseMonth > endMonth) continue;
+        var c0 = it.createdDate ? new Date(it.createdDate) : null;
+        isNew = !!(c0 && c0 >= start && c0 <= end);
+      } else {
+        var c = it.createdDate ? new Date(it.createdDate) : null;
+        var m = it.modifiedDate ? new Date(it.modifiedDate) : null;
+        var createdIn = !!(c && c >= start && c <= end);
+        var modifiedIn = !!(m && m >= start && m <= end);
+        if (!createdIn && !modifiedIn) continue;
+        isNew = createdIn;
+      }
+
+      matched.push({
+        key: it.key, kind: it.kind, referenceId: it.referenceId,
+        title: it.title, product: it.product, status: it.status,
+        description: it.description, releaseDate: it.releaseDate,
+        isNew: isNew, section: sectionFor(it.product + " " + it.title)
+      });
+    }
+
+    var byName = {};
+    matched.forEach(function (it) {
+      (byName[it.section] = byName[it.section] || []).push(it);
+    });
+
+    var sections = Object.keys(byName).map(function (name) {
+      var items = byName[name].sort(function (a, b) {
+        if (a.isNew !== b.isNew) return a.isNew ? -1 : 1;
+        return a.title.localeCompare(b.title);
+      });
+      return { name: name, items: items, newCount: items.filter(function (x) { return x.isNew; }).length };
+    }).sort(function (a, b) {
+      var d = sectionRank(a.name) - sectionRank(b.name);
+      return d !== 0 ? d : a.name.localeCompare(b.name);
+    });
+
+    var newCount = matched.filter(function (x) { return x.isNew; }).length;
+
+    return {
+      mode: mode,
+      startDate: startStr, endDate: endStr,
+      keywords: keywords.length ? $("keywords").value.split(",").map(function (s) { return s.trim(); }).filter(Boolean) : ["(all topics)"],
+      totalItems: matched.length,
+      newCount: newCount,
+      updatedCount: matched.length - newCount,
+      sections: sections,
+      sources: DATA.sources,
+      generatedAt: new Date().toISOString(),
+      dataGeneratedAt: DATA.generatedAt
+    };
+  }
+
+  // ------------------------------------------------------------------ preview
+  function refresh() {
+    var res = build();
+    var host = $("preview");
+    if (!res) { host.innerHTML = '<p class="summary-line">Waiting for data&hellip;</p>'; return; }
+
+    if (res.error) {
+      host.innerHTML = '<p class="status" data-tone="err"></p>';
+      host.firstChild.textContent = res.error;
+      $("buildBtn").disabled = true;
+      return;
+    }
+    $("buildBtn").disabled = !DATA;
+
+    if (res.totalItems === 0) {
+      host.innerHTML = '<p class="status" data-tone="warn">No items matched. Try widening the dates, clearing a keyword, or switching the coverage option.</p>';
+      $("buildBtn").disabled = true;
+      return;
+    }
+
+    var noun = res.mode === "release" ? "items targeting release" : "items with activity";
+    var html = '<p class="summary-line"><span class="num">' + res.totalItems + '</span> ' + noun +
+      ' &nbsp;\u2022&nbsp; <span class="num">' + res.newCount + '</span> new' +
+      ' &nbsp;\u2022&nbsp; <span class="num">' + res.updatedCount + '</span> ' +
+      (res.mode === "release" ? "carried over" : "updated") + '</p>';
+
+    html += '<table><caption>Sections in the generated deck</caption><thead><tr>' +
+      '<th scope="col">Section</th><th scope="col" class="n">Items</th><th scope="col" class="n">New</th>' +
+      '</tr></thead><tbody>';
+    res.sections.forEach(function (s) {
+      var td = document.createElement("td");
+      td.textContent = s.name;
+      html += "<tr><th scope=\"row\" style=\"font-weight:600;text-transform:none;letter-spacing:0;color:var(--charcoal);font-size:.9rem\">" +
+        td.innerHTML + '</th><td class="n">' + s.items.length + '</td><td class="n">' + s.newCount + "</td></tr>";
+    });
+    html += "</tbody></table>";
+
+    var slides = 2 + res.sections.length * 1 + res.sections.reduce(function (a, s) {
+      return a + Math.ceil(s.items.length / 6);
+    }, 0) + 1;
+    html += '<p class="notes" style="margin-top:.9rem">Approximately ' + slides + " slides.</p>";
+
+    host.innerHTML = html;
+  }
+
+  ["change", "input"].forEach(function (evt) {
+    [startEl, endEl, $("keywords"), $("sourceFilter")].forEach(function (el) {
+      el.addEventListener(evt, refresh);
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="mode"]'), function (r) {
+    r.addEventListener("change", refresh);
+  });
+
+  // ------------------------------------------------------------ deck creation
+  function statusColor(s) { return STATUS_COLORS[s] || "616161"; }
+
+  function makeDeck(data) {
+    var pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";
+    pptx.author = "Copilot Roadmap Deck Builder";
+    pptx.company = "Microsoft";
+    pptx.subject = "Microsoft 365 Copilot Product Roadmap";
+    pptx.title = "Microsoft 365 Copilot - Product Roadmap";
+    pptx.lang = "en-US";
+
+    var W = 13.33, M = 0.6;
+    var forward = data.mode === "release";
+
+    // --- Title ---
+    var s1 = pptx.addSlide();
+    s1.background = { color: NAVY };
+    s1.addShape(pptx.ShapeType.rect, { x: 0, y: 4.55, w: W, h: 0.03, fill: { color: ICE, transparency: 40 }, line: { type: "none" } });
+    s1.addText("Microsoft 365 Copilot", {
+      x: M, y: 2.35, w: W - M * 2, h: 0.75,
+      fontFace: "Calibri", fontSize: 24, color: ICE, bold: true, charSpacing: 2, margin: 0
+    });
+    s1.addText(forward ? "Product Roadmap Outlook" : "Product Roadmap & AI Readiness", {
+      x: M, y: 2.9, w: W - M * 2, h: 1.1,
+      fontFace: "Georgia", fontSize: 42, color: WHITE, bold: true, margin: 0
+    });
+    s1.addText(fmtLong(data.startDate) + "  \u2014  " + fmtLong(data.endDate), {
+      x: M, y: 4.75, w: W - M * 2, h: 0.5, fontFace: "Calibri", fontSize: 20, color: ICE, margin: 0
+    });
+    s1.addText(
+      data.totalItems + (forward ? " items targeting release" : " updates") +
+      "   \u2022   " + data.newCount + " new   \u2022   " + data.updatedCount + (forward ? " carried over" : " updated"),
+      { x: M, y: 5.35, w: W - M * 2, h: 0.4, fontFace: "Calibri", fontSize: 14, color: WHITE, italic: true, margin: 0 }
+    );
+    s1.addText(
+      "Built " + new Date(data.generatedAt).toLocaleString("en-US") +
+      " from public Microsoft 365 Roadmap & Message Center data. Not an official Microsoft deck.",
+      { x: M, y: 7.0, w: W - M * 2, h: 0.35, fontFace: "Calibri", fontSize: 10, color: "8FA4CC", margin: 0 }
+    );
+
+    // --- Agenda ---
+    var s2 = pptx.addSlide();
+    s2.background = { color: WHITE };
+    s2.addText("What's inside", {
+      x: M, y: 0.5, w: W - M * 2, h: 0.7,
+      fontFace: "Georgia", fontSize: 32, bold: true, color: CHARCOAL, margin: 0
+    });
+    var cols = 2, cellW = (W - M * 2 - 0.4) / cols, cellH = 1.15;
+    data.sections.slice(0, 8).forEach(function (sec, i) {
+      var col = i % cols, row = Math.floor(i / cols);
+      var x = M + col * (cellW + 0.4), y = 1.5 + row * (cellH + 0.25);
+      s2.addShape(pptx.ShapeType.roundRect, { x: x, y: y, w: cellW, h: cellH, rectRadius: 0.08, fill: { color: "F4F6FB" }, line: { color: "DDE3F0", width: 1 } });
+      s2.addShape(pptx.ShapeType.roundRect, { x: x, y: y, w: 0.09, h: cellH, rectRadius: 0.08, fill: { color: NAVY }, line: { type: "none" } });
+      s2.addText(sec.name, { x: x + 0.3, y: y + 0.12, w: cellW - 0.5, h: 0.55, fontFace: "Calibri", fontSize: 15, bold: true, color: CHARCOAL, margin: 0 });
+      s2.addText(sec.items.length + " items  \u2022  " + sec.newCount + " new", { x: x + 0.3, y: y + 0.68, w: cellW - 0.5, h: 0.35, fontFace: "Calibri", fontSize: 11, color: MUTED, margin: 0 });
+    });
+
+    // --- Sections ---
+    var PER = 6;
+    data.sections.forEach(function (sec) {
+      var d = pptx.addSlide();
+      d.background = { color: NAVY };
+      d.addText(sec.name, { x: M, y: 3.0, w: W - M * 2, h: 1.2, fontFace: "Georgia", fontSize: 34, bold: true, color: WHITE, margin: 0 });
+      d.addText(sec.items.length + " items  \u2022  " + sec.newCount + " new", { x: M, y: 4.25, w: W - M * 2, h: 0.5, fontFace: "Calibri", fontSize: 16, color: ICE, margin: 0 });
+
+      for (var start = 0; start < sec.items.length; start += PER) {
+        var chunk = sec.items.slice(start, start + PER);
+        var sl = pptx.addSlide();
+        sl.background = { color: WHITE };
+        sl.addText(sec.name, { x: M, y: 0.4, w: W - M * 2 - 1.2, h: 0.55, fontFace: "Calibri", fontSize: 20, bold: true, color: NAVY, margin: 0 });
+        if (sec.items.length > PER) {
+          sl.addText((Math.floor(start / PER) + 1) + " of " + Math.ceil(sec.items.length / PER), {
+            x: W - M - 1.2, y: 0.45, w: 1.2, h: 0.45, fontFace: "Calibri", fontSize: 11, color: MUTED, align: "right", margin: 0
+          });
+        }
+
+        var rowH = (7.5 - 1.2 - 0.3) / PER;
+        chunk.forEach(function (item, idx) {
+          var y = 1.15 + idx * rowH;
+          sl.addShape(pptx.ShapeType.line, { x: M, y: y + rowH - 0.08, w: W - M * 2, h: 0, line: { color: "E8EAF0", width: 1 } });
+
+          var badgeW = 1.35;
+          sl.addShape(pptx.ShapeType.roundRect, { x: M, y: y + 0.04, w: badgeW, h: 0.28, rectRadius: 0.06, fill: { color: statusColor(item.status) }, line: { type: "none" } });
+          sl.addText(item.status || "Update", { x: M, y: y + 0.04, w: badgeW, h: 0.28, fontFace: "Calibri", fontSize: 9, color: WHITE, bold: true, align: "center", valign: "middle", margin: 0 });
+
+          var cursor = M + badgeW + 0.12;
+          if (item.isNew) {
+            // Navy keeps this readable next to the green "New Feature" status pill.
+            sl.addShape(pptx.ShapeType.roundRect, { x: cursor, y: y + 0.04, w: 0.62, h: 0.28, rectRadius: 0.06, fill: { color: NAVY }, line: { type: "none" } });
+            sl.addText("NEW", { x: cursor, y: y + 0.04, w: 0.62, h: 0.28, fontFace: "Calibri", fontSize: 9, color: WHITE, bold: true, align: "center", valign: "middle", margin: 0 });
+            cursor += 0.74;
+          }
+          if (item.releaseDate) {
+            sl.addText(item.releaseDate, { x: cursor, y: y + 0.04, w: 2.2, h: 0.28, fontFace: "Calibri", fontSize: 9.5, color: MUTED, valign: "middle", margin: 0 });
+          }
+
+          var ref = item.kind === "Message Center"
+            ? (String(item.referenceId).indexOf("MC") === 0 ? item.referenceId : "MC" + item.referenceId)
+            : "RM " + item.referenceId;
+          sl.addText(ref, { x: W - M - 1.6, y: y + 0.04, w: 1.6, h: 0.28, fontFace: "Calibri", fontSize: 9, color: MUTED, align: "right", valign: "middle", margin: 0 });
+
+          sl.addText(truncate(item.title, 100), { x: M, y: y + 0.34, w: W - M * 2, h: 0.3, fontFace: "Calibri", fontSize: 13, bold: true, color: CHARCOAL, margin: 0 });
+          sl.addText(truncate(item.description, 175), { x: M, y: y + 0.62, w: W - M * 2, h: 0.32, fontFace: "Calibri", fontSize: 10.5, color: MUTED, margin: 0 });
+        });
+      }
+    });
+
+    // --- Sources ---
+    var sN = pptx.addSlide();
+    sN.background = { color: NAVY };
+    sN.addText("Sources & Notes", { x: M, y: 0.6, w: W - M * 2, h: 0.7, fontFace: "Georgia", fontSize: 30, bold: true, color: WHITE, margin: 0 });
+    var bullets = data.sources.concat([
+      "Built from public Microsoft 365 Roadmap and Message Center data. This is not an official Microsoft PRAI deliverable and does not use ESXP.",
+      forward
+        ? "Coverage: roadmap items with a target release month inside the selected range."
+        : "Coverage: items published or updated inside the selected range. \"New\" means first published in the range; \"Updated\" means an older item changed in the range.",
+      "Date range: " + data.startDate + " to " + data.endDate + "  \u2022  Keywords: " + data.keywords.join(", "),
+      "Source data refreshed: " + new Date(data.dataGeneratedAt).toLocaleString("en-US")
+    ]);
+    sN.addText(bullets.map(function (b, i) {
+      return { text: b, options: { bullet: { code: "2022", color: ICE }, breakLine: i < bullets.length - 1, paraSpaceAfter: 14 } };
+    }), { x: M, y: 1.45, w: W - M * 2, h: 5.4, fontFace: "Calibri", fontSize: 14, color: WHITE, valign: "top", margin: 0 });
+
+    return pptx;
+  }
+
+  // ---------------------------------------------------------------- save flow
+  function suggestedName(data) {
+    var tag = data.startDate.replace(/-/g, "") + "-" + data.endDate.replace(/-/g, "");
+    return (data.mode === "release" ? "Copilot-Roadmap-Outlook-" : "Copilot-Roadmap-Update-") + tag + ".pptx";
+  }
+
+  $("buildBtn").addEventListener("click", function () {
+    var data = build();
+    if (!data || data.error || data.totalItems === 0) return;
+
+    var btn = $("buildBtn");
+    var name = suggestedName(data);
+
+    btn.disabled = true;
+    setStatus($("buildStatus"), null, "Building " + data.totalItems + " items\u2026");
+
+    // The save picker must be opened from the user gesture chain, so ask first.
+    var handlePromise;
+    if (window.showSaveFilePicker) {
+      handlePromise = window.showSaveFilePicker({
+        suggestedName: name,
+        types: [{
+          description: "PowerPoint presentation",
+          accept: { "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"] }
+        }]
+      }).catch(function (err) {
+        if (err && err.name === "AbortError") return "cancelled";
+        return null; // fall back to download
+      });
+    } else {
+      handlePromise = Promise.resolve(null);
+    }
+
+    handlePromise.then(function (handle) {
+      if (handle === "cancelled") {
+        setStatus($("buildStatus"), null, "Cancelled.");
+        btn.disabled = false;
+        return;
+      }
+      return makeDeck(data).write({ outputType: "blob" }).then(function (blob) {
+        if (handle) {
+          return handle.createWritable()
+            .then(function (w) { return w.write(blob).then(function () { return w.close(); }); })
+            .then(function () {
+              setStatus($("buildStatus"), "ok", "Saved " + handle.name + " \u2014 " + data.totalItems + " items.");
+            });
+        }
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url; a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        setStatus($("buildStatus"), "ok", "Downloaded " + name + " to your default downloads folder.");
+      });
+    }).catch(function (err) {
+      setStatus($("buildStatus"), "err", "Build failed: " + (err && err.message ? err.message : String(err)));
+    }).then(function () {
+      btn.disabled = false;
+    });
+  });
+})();
+</script>
+</body>
+</html>

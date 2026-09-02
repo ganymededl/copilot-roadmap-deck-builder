@@ -1,0 +1,6 @@
+node_modules/
+_qa/
+*.pdf
+*.pptx
+.DS_Store
+Thumbs.db
