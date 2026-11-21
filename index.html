@@ -3,11 +3,73 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="referrer" content="no-referrer" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'" />
+<script>
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("scoutTheme");
+    const theme =
+      param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
 <title>Copilot Roadmap Deck Builder</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e2761'/%3E%3Cpath d='M8 21V11h3.2l2.6 6.2L16.4 11h3.2v10h-2.3v-6.6l-2.2 5.2h-1.6l-2.2-5.2V21z' fill='%23cadcfc'/%3E%3C/svg%3E" />
 <meta name="description" content="Pick a date range and generate a Microsoft 365 Copilot product roadmap deck from public Microsoft 365 Roadmap and Message Center data." />
-<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" integrity="sha384-Cck14aA9cifjYolcnjebXRfWGkz5ltHMBiG4px/j8GS+xQcb7OhNQWZYyWjQ+UwQ" crossorigin="anonymous"></script>
 <style>
+  :root {
+    color-scheme: light;
+    --cp-bg: #f7f4ef;
+    --cp-bg-elevated: #fcfbf8;
+    --cp-surface: #ffffff;
+    --cp-surface-soft: #f5f5f5;
+    --cp-border: #dedede;
+    --cp-border-strong: #919191;
+    --cp-text: #242424;
+    --cp-text-muted: #5c5c5c;
+    --cp-text-soft: #6f6f6f;
+    --cp-accent: #b11f4b;
+    --cp-accent-hover: #9a1a41;
+    --cp-accent-soft: rgba(177, 31, 75, 0.08);
+    --cp-accent-fg: #ffffff;
+    --cp-success: #16a34a;
+    --cp-danger: #dc2626;
+    --cp-warning: #f59e0b;
+    --cp-link: #0078d4;
+    --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+    --cp-overlay: rgba(255, 255, 255, 0.8);
+    --cp-panel: rgba(255, 255, 255, 0.86);
+    --cp-panel-strong: rgba(255, 255, 255, 0.96);
+    --cp-sheen: rgba(255, 255, 255, 0.55);
+    --cp-highlight: rgba(177, 31, 75, 0.12);
+  }
+  html[data-theme="dark"] {
+    color-scheme: dark;
+    --cp-bg: #3d3b3a;
+    --cp-bg-elevated: #343231;
+    --cp-surface: #292929;
+    --cp-surface-soft: #2e2e2e;
+    --cp-border: #474747;
+    --cp-border-strong: #5f5f5f;
+    --cp-text: #dedede;
+    --cp-text-muted: #919191;
+    --cp-text-soft: #b0b0b0;
+    --cp-accent: #fd8ea1;
+    --cp-accent-hover: #fb7b91;
+    --cp-accent-soft: rgba(253, 142, 161, 0.14);
+    --cp-accent-fg: #1a1a1a;
+    --cp-success: #4ade80;
+    --cp-danger: #f87171;
+    --cp-warning: #fbbf24;
+    --cp-link: #4da6ff;
+    --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+    --cp-overlay: rgba(41, 41, 41, 0.88);
+    --cp-panel: rgba(41, 41, 41, 0.72);
+    --cp-panel-strong: rgba(41, 41, 41, 0.96);
+    --cp-sheen: rgba(255, 255, 255, 0.04);
+    --cp-highlight: rgba(253, 142, 161, 0.12);
+  }
   :root {
     --navy: #1e2761;
     --navy-deep: #161d4a;
@@ -129,6 +191,20 @@
 
   .summary-line { font-size: 1rem; font-weight: 600; margin: 0 0 .9rem; }
   .summary-line .num { color: var(--navy); }
+  .scope-box { margin-top: 1rem; border: 1px solid var(--cp-border); padding: .85rem 1rem; border-radius: 8px; background: var(--cp-surface-soft); color: var(--cp-text); }
+  .scope-box a { color: var(--cp-link); }
+  .scope-box .field-hint { color: var(--cp-text-soft); }
+  .scope-box select, .scope-box input[type="text"] { color: var(--cp-text); background: var(--cp-surface); border-color: var(--cp-border-strong); }
+  .scope-box p { margin: .25rem 0 .7rem; }
+  .scope-box p:last-child { margin-bottom: .25rem; }
+  summary { cursor: pointer; font-weight: 600; }
+  .secondary { font: inherit; background: var(--cp-surface); color: var(--cp-text); border: 1px solid var(--cp-border-strong); padding: .45rem .7rem; min-height: 38px; border-radius: 6px; cursor: pointer; }
+  .secondary:hover { border-color: var(--cp-accent); }
+  .verify-check { display: flex; gap: .5rem; align-items: baseline; margin: .85rem 0; }
+  .verify-check input { accent-color: var(--cp-accent); }
+  .item-list { padding-left: 1.25rem; }
+  .item-list li { margin: .4rem 0; overflow-wrap: anywhere; }
+  .item-list button { margin-left: .5rem; }
 
   table { width: 100%; border-collapse: collapse; font-size: .9rem; }
   caption { text-align: left; font-size: .85rem; color: var(--muted); padding-bottom: .5rem; }
@@ -219,7 +295,7 @@
 
   <div class="panel" role="region" aria-labelledby="h-filter">
     <h2 id="h-filter">2. Narrow the topic</h2>
-    <p class="hint">An item matches if any keyword appears in its product, title, or description.</p>
+    <p class="hint" id="keywordHint">An item matches if any keyword appears in its product, title, or description.</p>
     <div class="grid cols-2">
       <div>
         <label class="field" for="keywords">
@@ -231,14 +307,51 @@
       <div>
         <label class="field" for="sourceFilter">
           Sources
-          <span class="field-hint">Message Center items add admin-facing change notices.</span>
+          <span class="field-hint" id="sourceHint">Message Center items add admin-facing change notices.</span>
         </label>
-        <select id="sourceFilter">
+        <select id="sourceFilter" aria-describedby="sourceHint">
           <option value="both">Roadmap and Message Center</option>
           <option value="roadmap">Roadmap only</option>
           <option value="messages">Message Center only</option>
         </select>
       </div>
+      <div>
+        <label class="field" for="cloudFilter">Cloud</label>
+        <select id="cloudFilter" aria-describedby="cloudHint">
+          <option value="all">All clouds</option>
+          <option value="gcc">Applies to GCC Moderate</option>
+          <option value="gcc-only">GCC-only rollout records</option>
+        </select>
+        <span id="cloudHint" class="field-hint">GCC means GCC Moderate, not GCC High or DoD. Shared records are included only when they explicitly list GCC.</span>
+      </div>
+    </div>
+    <div class="scope-box notes" id="gccGuidance" hidden>
+      <p><strong>GCC Moderate scope.</strong> GCC-only rollout records have no other cloud tags on the Microsoft Roadmap. A GCC-only record does not mean that the feature is unavailable elsewhere.</p>
+      <p>Roadmap targets are not release dates for your agency. In the <a href="https://admin.microsoft.com/adminportal/home#/MessageCenter" target="_blank" rel="noopener noreferrer">Microsoft 365 admin center</a>, go to <strong>Health &gt; Message center</strong>, open the notice, and check <strong>Status for your org</strong> when available. Verify <a href="https://learn.microsoft.com/en-us/copilot/plan/copilot-license-options#us-government" target="_blank" rel="noopener noreferrer">licensing</a> and policies before announcing a pilot.</p>
+      <p id="gccStatus" class="status" role="status"></p>
+      <button type="button" class="secondary" id="gccRetry" hidden>Retry GCC data</button>
+    </div>
+    <div class="scope-box notes" id="agencyPanel" hidden>
+      <h3>Agency Message Center references</h3>
+      <p id="agencyHelp">Optional internal appendix. Enter only notice IDs approved for inclusion. Do not enter notice text, credentials, or tenant details. Nothing you enter is sent to the builder or saved by the page. References are not roadmap records and do not affect the date or keyword counts.</p>
+      <div class="grid cols-2">
+        <div>
+          <label class="field" for="agencyId">Message Center ID</label>
+          <input type="text" id="agencyId" maxlength="14" placeholder="MC123456" autocomplete="off" spellcheck="false" aria-describedby="agencyHelp" />
+        </div>
+        <div>
+          <label class="field" for="agencyScope">Cloud scope stated in the notice</label>
+          <select id="agencyScope">
+            <option value="">Select verified scope</option>
+            <option value="gcc-only">GCC Moderate only</option>
+            <option value="gcc">GCC Moderate and other clouds</option>
+          </select>
+        </div>
+      </div>
+      <label class="verify-check"><input type="checkbox" id="agencyConfirmed" /> I checked this Copilot notice in my GCC Moderate tenant and confirmed its scope.</label>
+      <button class="secondary" type="button" id="agencyAdd">Add reference</button>
+      <p class="status" id="agencyStatus" role="status" hidden></p>
+      <ul class="item-list" id="agencyList" aria-label="Agency Message Center references"></ul>
     </div>
   </div>
 
@@ -279,7 +392,10 @@
 </div>
 </main>
 
-<script>
+<script type="module">
+import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTags, roadmapLink,
+  agencyReference, matchingAgencyReferences } from "./scripts/gcc.mjs";
+
 (function () {
   "use strict";
 
@@ -302,6 +418,13 @@
     ["Copilot Chat & Core Experiences", ["Microsoft Copilot (Microsoft 365)", "Microsoft 365 Copilot Chat", "Microsoft 365"]]
   ];
   var FALLBACK_SECTION = "Other Updates";
+  var GCC_AGENCY_SOURCE = "gcc-agency";
+  var GCC_MAX_AGE = 3 * 24 * 60 * 60 * 1000;
+  var GCC_DATA = null;
+  var gccLoadState = "idle";
+  var agencies = [];
+  var previousCloud = "all", previousSource = "both";
+  var isBuilding = false;
 
   // ------------------------------------------------------------------ helpers
   var $ = function (id) { return document.getElementById(id); };
@@ -366,10 +489,9 @@
     b.addEventListener("click", function () { applyPreset(b.getAttribute("data-preset")); });
   });
 
-  applyPreset("lastMonth");
-
   // ------------------------------------------------------------- data loading
   var DATA = null;
+  var publicLoadError = false;
 
   fetch("data/roadmap.json", { cache: "no-cache" })
     .then(function (r) {
@@ -384,20 +506,121 @@
         json.roadmapCount.toLocaleString() + " roadmap, " +
         json.messageCount.toLocaleString() + " Message Center.");
       $("freshness").textContent = "Dataset last refreshed " + when.toLocaleString() + ".";
-      $("buildBtn").disabled = false;
-      setStatus($("buildStatus"), null, "Ready.");
       refresh();
     })
     .catch(function (err) {
       setStatus($("dataStatus"), "err",
         "Could not load data/roadmap.json (" + err.message + "). If you opened this file directly from disk, serve it over http instead.");
-      setStatus($("buildStatus"), "err", "Data unavailable.");
+      publicLoadError = true;
+      refresh();
     });
 
   function setStatus(el, tone, msg) {
     el.textContent = msg;
     if (tone) el.setAttribute("data-tone", tone); else el.removeAttribute("data-tone");
   }
+
+  function isGcc(scope) { return Object.hasOwn(GCC_SCOPES, scope); }
+
+  function loadGcc() {
+    if (gccLoadState === "loading" || GCC_DATA) return;
+    gccLoadState = "loading";
+    refresh();
+    fetch("data/gcc-roadmap.json", { cache: "no-cache" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (json) {
+        if (!Array.isArray(json.items) || !json.items.length ||
+            !Number.isFinite(Date.parse(json.generatedAt)) || json.count !== json.items.length ||
+            !json.items.every(function (item) {
+              return item.kind === "Roadmap" && roadmapLink(item.referenceId) &&
+                matchesGcc(normalizeCloudTags(item.cloudInstances), "gcc");
+            })) throw new Error("Invalid GCC snapshot");
+        GCC_DATA = json;
+        gccLoadState = "ready";
+        refresh();
+      })
+      .catch(function (error) {
+        console.error("GCC Roadmap data unavailable:", error);
+        gccLoadState = "error";
+        refresh();
+      });
+  }
+
+  function setupCloud() {
+    var scope = $("cloudFilter").value;
+    var gcc = isGcc(scope);
+    var wasGcc = isGcc(previousCloud);
+    var source = $("sourceFilter");
+    if (gcc !== wasGcc) {
+      if (gcc) previousSource = source.value;
+      source.options[0].hidden = source.options[0].disabled = gcc;
+      source.options[2].hidden = source.options[2].disabled = gcc;
+      var agencyOption = source.querySelector('option[value="' + GCC_AGENCY_SOURCE + '"]');
+      if (gcc && !agencyOption) source.add(new Option("Roadmap + agency-verified references", GCC_AGENCY_SOURCE));
+      if (!gcc && agencyOption) agencyOption.remove();
+      source.value = gcc ? "roadmap" : previousSource;
+      $("sourceHint").textContent = gcc
+        ? "GCC exports exclude public Message Center posts. You can add references you verify in your own tenant."
+        : "Message Center items add admin-facing change notices.";
+      $("keywordHint").textContent = gcc
+        ? "Search by product, title, or Roadmap ID. The Copilot keyword also checks whether the source description mentions Copilot."
+        : "An item matches if any keyword appears in its product, title, or description.";
+    }
+    previousCloud = scope;
+    refresh();
+    if (gcc && gccLoadState === "idle") loadGcc();
+  }
+
+  function updateAgencyList(scope) {
+    var optionsVisible = isGcc(scope) && $("sourceFilter").value === GCC_AGENCY_SOURCE;
+    $("agencyPanel").hidden = !optionsVisible;
+    if (!optionsVisible) return;
+    var list = $("agencyList");
+    list.replaceChildren();
+    agencies.forEach(function (ref) {
+      var li = document.createElement("li");
+      li.textContent = ref.id + (ref.scope === "gcc-only" ? " — GCC Moderate only" :
+        (scope === "gcc-only" ? " — shared; excluded by the GCC-only filter" : " — includes GCC Moderate"));
+      var remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "secondary";
+      remove.textContent = "Remove";
+      remove.setAttribute("aria-label", "Remove " + ref.id);
+      remove.addEventListener("click", function () {
+        agencies = agencies.filter(function (item) { return item.id !== ref.id; });
+        $("agencyStatus").hidden = false;
+        setStatus($("agencyStatus"), null, "Removed " + ref.id + ".");
+        refresh();
+        $("agencyAdd").focus();
+      });
+      li.appendChild(remove);
+      list.appendChild(li);
+    });
+  }
+
+  $("agencyAdd").addEventListener("click", function () {
+    var status = $("agencyStatus");
+    status.hidden = false;
+    try {
+      var ref = agencyReference($("agencyId").value, $("agencyScope").value, $("agencyConfirmed").checked);
+      if (agencies.some(function (item) { return item.id === ref.id; })) throw new Error("That notice is already listed.");
+      if (agencies.length >= 24) throw new Error("Add at most 24 notice references per deck.");
+      agencies.push(ref);
+      $("agencyId").value = "";
+      $("agencyScope").value = "";
+      $("agencyConfirmed").checked = false;
+      setStatus(status, "ok", "Added " + ref.id + ".");
+      refresh();
+      $("agencyId").focus();
+    } catch (error) {
+      setStatus(status, "err", error.message);
+    }
+  });
+  $("cloudFilter").addEventListener("change", setupCloud);
+  $("gccRetry").addEventListener("click", loadGcc);
 
   // ---------------------------------------------------------------- filtering
   function currentMode() {
@@ -406,7 +629,12 @@
 
   function build() {
     var startStr = startEl.value, endStr = endEl.value;
-    if (!DATA || !startStr || !endStr) return null;
+    var scope = $("cloudFilter").value;
+    var gcc = isGcc(scope);
+    var dataset = gcc ? GCC_DATA : DATA;
+    if (!dataset) return null;
+    if (!startStr || !endStr) return { error: "Choose both a start date and an end date." };
+    if (startStr < MIN_DATE || endStr > MAX_DATE) return { error: "Choose dates within the supported range." };
 
     var start = parseISO(startStr);
     var end = parseISO(endStr);
@@ -422,23 +650,27 @@
     var startMonth = startStr.slice(0, 7), endMonth = endStr.slice(0, 7);
     var matched = [];
 
-    for (var i = 0; i < DATA.items.length; i++) {
-      var it = DATA.items[i];
+    for (var i = 0; i < dataset.items.length; i++) {
+      var it = dataset.items[i];
+      var tags = gcc ? normalizeCloudTags(it.cloudInstances) : [];
 
+      if (gcc && (it.kind !== "Roadmap" || !matchesGcc(tags, scope))) continue;
       if (srcFilter === "roadmap" && it.kind !== "Roadmap") continue;
       if (srcFilter === "messages" && it.kind !== "Message Center") continue;
 
       if (keywords.length) {
-        var hay = (it.product + " " + it.title + " " + it.description).toLowerCase();
+        var hay = (it.product + " " + it.title + (gcc ? "" : " " + it.description)).toLowerCase();
         var hit = false;
         for (var k = 0; k < keywords.length; k++) {
-          if (hay.indexOf(keywords[k]) !== -1) { hit = true; break; }
+          if (hay.indexOf(keywords[k]) !== -1 || (gcc &&
+              (keywords[k] === it.referenceId || (keywords[k] === "copilot" && it.copilotMention)))) { hit = true; break; }
         }
         if (!hit) continue;
       }
 
       var isNew = false;
       if (mode === "release") {
+        if (gcc && it.status === "Cancelled") continue;
         if (!it.releaseMonth) continue;
         if (it.releaseMonth < startMonth || it.releaseMonth > endMonth) continue;
         var c0 = it.createdDate ? new Date(it.createdDate) : null;
@@ -455,7 +687,10 @@
       matched.push({
         key: it.key, kind: it.kind, referenceId: it.referenceId,
         title: it.title, product: it.product, status: it.status,
-        description: it.description, releaseDate: it.releaseDate,
+        description: gcc ? (it.platforms?.length ? "Platforms: " + it.platforms.join(", ") : "") : it.description,
+        releaseDate: gcc ? monthLabel(it.releaseMonth) : it.releaseDate,
+        gccTag: gcc ? (tags.length === 1 ? "GCC-only record" : "GCC + other clouds") : "",
+        gccNote: gcc ? it.gccNote : "",
         isNew: isNew, section: sectionFor(it.product + " " + it.title)
       });
     }
@@ -480,23 +715,65 @@
 
     return {
       mode: mode,
+      gcc: gcc, cloudLabel: GCC_SCOPES[scope], scope: scope,
+      stale: gcc && Date.now() - Date.parse(dataset.generatedAt) > GCC_MAX_AGE,
+      agencyRefs: gcc && srcFilter === GCC_AGENCY_SOURCE ? matchingAgencyReferences(agencies, scope) : [],
       startDate: startStr, endDate: endStr,
       keywords: keywords.length ? $("keywords").value.split(",").map(function (s) { return s.trim(); }).filter(Boolean) : ["(all topics)"],
       totalItems: matched.length,
       newCount: newCount,
       updatedCount: matched.length - newCount,
       sections: sections,
-      sources: DATA.sources,
+      sources: gcc ? ["Microsoft 365 Roadmap (first-party public feed)"] : dataset.sources,
       generatedAt: new Date().toISOString(),
-      dataGeneratedAt: DATA.generatedAt
+      dataGeneratedAt: dataset.generatedAt
     };
+  }
+
+  function monthLabel(value) {
+    if (!value) return "";
+    return parseISO(value + "-01").toLocaleDateString("en-US", { month: "long", year: "numeric" });
   }
 
   // ------------------------------------------------------------------ preview
   function refresh() {
+    var scope = $("cloudFilter").value;
+    var gcc = isGcc(scope);
+    $("gccGuidance").hidden = !gcc;
+    $("gccRetry").hidden = !gcc || gccLoadState !== "error";
+    if (gcc) {
+      var when = GCC_DATA && new Date(GCC_DATA.generatedAt);
+      var stale = when && Date.now() - when.getTime() > GCC_MAX_AGE;
+      if (when) {
+        setStatus($("gccStatus"), stale ? "warn" : "ok",
+          "Microsoft Roadmap: " + GCC_DATA.count + " records tagged GCC. Snapshot: " + when.toLocaleString() +
+          (stale ? ". More than 3 days old. Recheck dates against Microsoft before sharing." : "."));
+      } else if (gccLoadState === "error") {
+        setStatus($("gccStatus"), "err", "Microsoft GCC Roadmap data is unavailable. No other feed is substituted.");
+      } else {
+        setStatus($("gccStatus"), null, "Loading Microsoft GCC Roadmap data\u2026");
+      }
+    }
     var res = build();
+    updateAgencyList(scope);
     var host = $("preview");
-    if (!res) { host.innerHTML = '<p class="summary-line">Waiting for data&hellip;</p>'; return; }
+    var ready = res && !res.error && res.totalItems > 0;
+    var libraryReady = typeof window.PptxGenJS === "function";
+    $("buildBtn").disabled = !ready || !libraryReady || isBuilding;
+    if (!isBuilding) {
+      if ((gcc && gccLoadState === "error") || (!gcc && publicLoadError)) {
+        setStatus($("buildStatus"), "err", "Data unavailable.");
+      } else if (!libraryReady) {
+        setStatus($("buildStatus"), "err", "PowerPoint generation could not load. Reload or ask your IT team if the script is blocked.");
+      } else {
+        setStatus($("buildStatus"), null, ready ? "Ready." : "No deck to build yet.");
+      }
+    }
+    if (!res) {
+      host.textContent = (gcc && gccLoadState === "error") || (!gcc && publicLoadError)
+        ? "Data unavailable." : "Waiting for data\u2026";
+      return;
+    }
 
     if (res.error) {
       host.innerHTML = '<p class="status" data-tone="err"></p>';
@@ -504,15 +781,12 @@
       $("buildBtn").disabled = true;
       return;
     }
-    $("buildBtn").disabled = !DATA;
-
     if (res.totalItems === 0) {
-      host.innerHTML = '<p class="status" data-tone="warn">No items matched. Try widening the dates, clearing a keyword, or switching the coverage option.</p>';
-      $("buildBtn").disabled = true;
+      host.innerHTML = '<p class="status" data-tone="warn">No items matched these settings. Try widening the dates, changing a keyword, or changing the coverage option.</p>';
       return;
     }
 
-    var noun = res.mode === "release" ? "items targeting release" : "items with activity";
+    var noun = (res.totalItems === 1 ? "item" : "items") + (res.mode === "release" ? " targeting release" : " with activity");
     var html = '<p class="summary-line"><span class="num">' + res.totalItems + '</span> ' + noun +
       ' &nbsp;\u2022&nbsp; <span class="num">' + res.newCount + '</span> new' +
       ' &nbsp;\u2022&nbsp; <span class="num">' + res.updatedCount + '</span> ' +
@@ -531,10 +805,38 @@
 
     var slides = 2 + res.sections.length * 1 + res.sections.reduce(function (a, s) {
       return a + Math.ceil(s.items.length / 6);
-    }, 0) + 1;
+    }, 0) + 1 + Math.ceil(res.agencyRefs.length / 8);
     html += '<p class="notes" style="margin-top:.9rem">Approximately ' + slides + " slides.</p>";
 
     host.innerHTML = html;
+    if (res.gcc) {
+      var caption = document.createElement("p");
+      caption.className = "notes";
+      caption.textContent = res.cloudLabel + " \u00b7 " + res.agencyRefs.length +
+        " agency Message Center reference(s) in the internal appendix, not in the counts above.";
+      host.prepend(caption);
+      var detail = document.createElement("details");
+      var summary = document.createElement("summary");
+      summary.textContent = "Review matching Roadmap records";
+      var list = document.createElement("ul");
+      list.className = "item-list notes";
+      res.sections.forEach(function (section) {
+        section.items.forEach(function (item) {
+          var li = document.createElement("li");
+          var link = document.createElement("a");
+          link.href = roadmapLink(item.referenceId);
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = item.title + " (#" + item.referenceId + ")";
+          li.append(link, " \u2014 " + item.gccTag + " \u00b7 " + item.status +
+            (item.releaseDate ? " \u00b7 GA target " + item.releaseDate : "") +
+            (item.gccNote ? " \u2014 " + item.gccNote : ""));
+          list.appendChild(li);
+        });
+      });
+      detail.append(summary, list);
+      host.appendChild(detail);
+    }
   }
 
   ["change", "input"].forEach(function (evt) {
@@ -545,6 +847,10 @@
   Array.prototype.forEach.call(document.querySelectorAll('input[name="mode"]'), function (r) {
     r.addEventListener("change", refresh);
   });
+  var initialScope = new URLSearchParams(window.location.search).get("cloud");
+  if (isGcc(initialScope)) $("cloudFilter").value = initialScope;
+  applyPreset("lastMonth");
+  setupCloud();
 
   // ------------------------------------------------------------ deck creation
   function statusColor(s) { return STATUS_COLORS[s] || "616161"; }
@@ -553,9 +859,8 @@
     var pptx = new PptxGenJS();
     pptx.layout = "LAYOUT_WIDE";
     pptx.author = "Copilot Roadmap Deck Builder";
-    pptx.company = "Microsoft";
-    pptx.subject = "Microsoft 365 Copilot Product Roadmap";
-    pptx.title = "Microsoft 365 Copilot - Product Roadmap";
+    pptx.subject = "Microsoft 365 Copilot Product Roadmap" + (data.gcc ? " | " + data.cloudLabel : "");
+    pptx.title = "Microsoft 365 Copilot - Product Roadmap" + (data.gcc ? " - GCC Moderate" : "");
     pptx.lang = "en-US";
 
     var W = 13.33, M = 0.6;
@@ -581,9 +886,20 @@
       "   \u2022   " + data.newCount + " new   \u2022   " + data.updatedCount + (forward ? " carried over" : " updated"),
       { x: M, y: 5.35, w: W - M * 2, h: 0.4, fontFace: "Calibri", fontSize: 14, color: WHITE, italic: true, margin: 0 }
     );
+    if (data.gcc) {
+      s1.addText("GCC Moderate | " + data.cloudLabel, {
+        x: M, y: 5.86, w: W - M * 2, h: 0.33, fontFace: "Calibri", fontSize: 17, bold: true, color: ICE, margin: 0
+      });
+      if (data.agencyRefs.length) {
+        s1.addText("Internal agency use: contains tenant-verified Message Center references.", {
+          x: M, y: 6.25, w: W - M * 2, h: 0.3, fontFace: "Calibri", fontSize: 13.5, color: WHITE, margin: 0
+        });
+      }
+    }
     s1.addText(
       "Built " + new Date(data.generatedAt).toLocaleString("en-US") +
-      " from public Microsoft 365 Roadmap & Message Center data. Not an official Microsoft deck.",
+      (data.gcc ? " from the public Microsoft 365 Roadmap." : " from public Microsoft 365 Roadmap & Message Center data.") +
+      " Not an official Microsoft deck.",
       { x: M, y: 7.0, w: W - M * 2, h: 0.35, fontFace: "Calibri", fontSize: 10, color: "8FA4CC", margin: 0 }
     );
 
@@ -646,29 +962,75 @@
           var ref = item.kind === "Message Center"
             ? (String(item.referenceId).indexOf("MC") === 0 ? item.referenceId : "MC" + item.referenceId)
             : "RM " + item.referenceId;
-          sl.addText(ref, { x: W - M - 1.6, y: y + 0.04, w: 1.6, h: 0.28, fontFace: "Calibri", fontSize: 9, color: MUTED, align: "right", valign: "middle", margin: 0 });
+          if (item.gccTag) {
+            sl.addText(item.gccTag, { x: 6.05, y: y + 0.04, w: 3.2, h: 0.28, fontFace: "Calibri", fontSize: 10, color: MUTED, bold: true, margin: 0 });
+          }
+          var refUrl = data.gcc ? roadmapLink(item.referenceId) : null;
+          sl.addText(ref, {
+            x: W - M - 1.6, y: y + 0.04, w: 1.6, h: 0.28, fontFace: "Calibri", fontSize: 9, color: MUTED,
+            align: "right", valign: "middle", margin: 0, ...(refUrl ? { hyperlink: { url: refUrl } } : {})
+          });
 
           sl.addText(truncate(item.title, 100), { x: M, y: y + 0.34, w: W - M * 2, h: 0.3, fontFace: "Calibri", fontSize: 13, bold: true, color: CHARCOAL, margin: 0 });
-          sl.addText(truncate(item.description, 175), { x: M, y: y + 0.62, w: W - M * 2, h: 0.32, fontFace: "Calibri", fontSize: 10.5, color: MUTED, margin: 0 });
+          sl.addText(item.gccNote || truncate(item.description, 175), { x: M, y: y + 0.62, w: W - M * 2, h: 0.32, fontFace: "Calibri", fontSize: 10.5, color: MUTED, margin: 0 });
         });
       }
     });
+
+    for (var i = 0; i < data.agencyRefs.length; i += 8) {
+      var appendix = pptx.addSlide();
+      appendix.background = { color: WHITE };
+      appendix.addText("Internal agency use | Message Center references", {
+        x: M, y: 0.55, w: W - M * 2, h: 0.65, fontFace: "Georgia", fontSize: 29, bold: true, color: NAVY, margin: 0
+      });
+      appendix.addText("Added by the deck author after checking the agency's GCC Moderate tenant. Not roadmap targets. Links require agency sign-in.", {
+        x: M, y: 1.33, w: W - M * 2, h: 0.5, fontFace: "Calibri", fontSize: 14, color: MUTED, margin: 0
+      });
+      data.agencyRefs.slice(i, i + 8).forEach(function (ref, index) {
+        var y = 2.02 + index * 0.49;
+        appendix.addText(ref.id, {
+          x: M, y: y, w: 2.9, h: 0.32, fontFace: "Calibri", fontSize: 16, color: NAVY, bold: true, margin: 0,
+          hyperlink: { url: ref.url }
+        });
+        appendix.addText(ref.scope === "gcc-only" ? "GCC Moderate only" : "Shared rollout; includes GCC Moderate", {
+          x: M + 3.0, y: y, w: 8.2, h: 0.32, fontFace: "Calibri", fontSize: 14, color: MUTED, margin: 0
+        });
+      });
+      appendix.addText("Review in your agency's Message Center. Remove this appendix before sharing outside your organization.", {
+        x: M, y: 6.64, w: W - M * 2, h: 0.35, fontFace: "Calibri", fontSize: 12, bold: true, color: MUTED, margin: 0
+      });
+    }
 
     // --- Sources ---
     var sN = pptx.addSlide();
     sN.background = { color: NAVY };
     sN.addText("Sources & Notes", { x: M, y: 0.6, w: W - M * 2, h: 0.7, fontFace: "Georgia", fontSize: 30, bold: true, color: WHITE, margin: 0 });
     var bullets = data.sources.concat([
-      "Built from public Microsoft 365 Roadmap and Message Center data. This is an independent summary of published information, not an official Microsoft roadmap deck.",
+      "Independent summary of published information, not an official Microsoft roadmap deck.",
       forward
-        ? "Coverage: roadmap items with a target release month inside the selected range."
+        ? "Coverage: roadmap items with a published target month inside the selected range." + (data.gcc ? " Cancelled items are excluded." : "")
         : "Coverage: items published or updated inside the selected range. \"New\" means first published in the range; \"Updated\" means an older item changed in the range.",
       "Date range: " + data.startDate + " to " + data.endDate + "  \u2022  Keywords: " + data.keywords.join(", "),
       "Source data refreshed: " + new Date(data.dataGeneratedAt).toLocaleString("en-US")
     ]);
+    if (data.gcc) {
+      bullets.push(
+        data.cloudLabel + ": " + (data.scope === "gcc-only" ? "the record has only the GCC tag." : "the record explicitly includes GCC, even if it also lists other clouds."),
+        "Cloud tags describe records, not feature exclusivity. Targets don't confirm tenant availability. Check Health > Message center, licensing, and policy in your GCC Moderate tenant.",
+        "Public Message Center posts are excluded from GCC exports." +
+          (data.agencyRefs.length ? " The appendix contains only agency-confirmed references; they are not counted as roadmap items." : "")
+      );
+      if (data.stale) bullets.push("Snapshot was more than 3 days old when built. Recheck the official Roadmap before sharing.");
+    }
     sN.addText(bullets.map(function (b, i) {
       return { text: b, options: { bullet: { code: "2022", color: ICE }, breakLine: i < bullets.length - 1, paraSpaceAfter: 14 } };
-    }), { x: M, y: 1.45, w: W - M * 2, h: 5.4, fontFace: "Calibri", fontSize: 14, color: WHITE, valign: "top", margin: 0 });
+    }), { x: M, y: 1.45, w: W - M * 2, h: 4.88, fontFace: "Calibri", fontSize: 14, color: WHITE, valign: "top", margin: 0 });
+    if (data.gcc) {
+      sN.addText("Microsoft Roadmap", { x: M, y: 6.55, w: 2.5, h: 0.35, fontFace: "Calibri", fontSize: 13, color: ICE,
+        hyperlink: { url: ROADMAP_HOME, color: ICE }, margin: 0 });
+      sN.addText("Agency Message Center", { x: M + 2.75, y: 6.55, w: 3.2, h: 0.35, fontFace: "Calibri", fontSize: 13, color: ICE,
+        hyperlink: { url: MESSAGE_CENTER, color: ICE }, margin: 0 });
+    }
 
     return pptx;
   }
@@ -676,16 +1038,20 @@
   // ---------------------------------------------------------------- save flow
   function suggestedName(data) {
     var tag = data.startDate.replace(/-/g, "") + "-" + data.endDate.replace(/-/g, "");
-    return (data.mode === "release" ? "Copilot-Roadmap-Outlook-" : "Copilot-Roadmap-Update-") + tag + ".pptx";
+    var scope = data.scope === "gcc-only" ? "GCC-Moderate-Only-" : (data.gcc ? "GCC-Moderate-" : "");
+    var internal = data.agencyRefs.length ? "Internal-" : "";
+    return (data.mode === "release" ? "Copilot-Roadmap-Outlook-" : "Copilot-Roadmap-Update-") + scope + internal + tag + ".pptx";
   }
 
   $("buildBtn").addEventListener("click", function () {
     var data = build();
     if (!data || data.error || data.totalItems === 0) return;
 
+    if (isBuilding) return;
     var btn = $("buildBtn");
     var name = suggestedName(data);
 
+    isBuilding = true;
     btn.disabled = true;
     setStatus($("buildStatus"), null, "Building " + data.totalItems + " items\u2026");
 
@@ -709,7 +1075,6 @@
     handlePromise.then(function (handle) {
       if (handle === "cancelled") {
         setStatus($("buildStatus"), null, "Cancelled.");
-        btn.disabled = false;
         return;
       }
       return makeDeck(data).write({ outputType: "blob" }).then(function (blob) {
@@ -730,7 +1095,9 @@
     }).catch(function (err) {
       setStatus($("buildStatus"), "err", "Build failed: " + (err && err.message ? err.message : String(err)));
     }).then(function () {
-      btn.disabled = false;
+      var current = build();
+      isBuilding = false;
+      btn.disabled = !current || !!current.error || !current.totalItems;
     });
   });
 })();

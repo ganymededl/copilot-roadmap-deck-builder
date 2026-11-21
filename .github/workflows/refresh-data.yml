@@ -8,6 +8,9 @@ on:
   push:
     paths:
       - "scripts/fetch-data.mjs"
+      - "scripts/fetch-gcc-roadmap.mjs"
+      - "scripts/gcc.mjs"
+      - "tests/gcc.test.mjs"
       - ".github/workflows/refresh-data.yml"
 
 permissions:
@@ -27,10 +30,21 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Test GCC filters and normalization
+        run: node --test tests/gcc.test.mjs
+
+      - name: Fetch Microsoft GCC Roadmap data
+        id: gcc
+        run: node scripts/fetch-gcc-roadmap.mjs
+
       - name: Fetch roadmap + Message Center data
+        id: legacy
+        if: ${{ !cancelled() && (steps.gcc.outcome == 'success' || steps.gcc.outcome == 'failure') }}
         run: node scripts/fetch-data.mjs
 
       - name: Verify output
+        id: verify_legacy
+        if: ${{ !cancelled() && steps.legacy.outcome == 'success' }}
         run: |
           test -s data/roadmap.json
           node -e "
@@ -43,13 +57,18 @@ jobs:
           "
 
       - name: Commit if changed
+        if: ${{ !cancelled() && (steps.verify_legacy.outcome == 'success' || steps.gcc.outcome == 'success') }}
+        env:
+          GCC_RESULT: ${{ steps.gcc.outcome }}
+          LEGACY_RESULT: ${{ steps.verify_legacy.outcome }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- data/roadmap.json; then
+          if [ "$GCC_RESULT" = success ]; then git add data/gcc-roadmap.json; fi
+          if [ "$LEGACY_RESULT" = success ]; then git add data/roadmap.json; fi
+          if git diff --cached --quiet; then
             echo "No data changes."
           else
-            git add data/roadmap.json
             git commit -m "chore: refresh roadmap data ($(date -u +%Y-%m-%d))"
             git push
           fi
