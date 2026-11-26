@@ -48,7 +48,7 @@ export function isCopilotRelevant(message) {
  * matching the "Copilot first" intent of this feature and limiting how much
  * tenant-specific content gets published.
  */
-export function normalizeMessages(records, generatedAt = new Date().toISOString()) {
+export function normalizeMessages(records, generatedAt = new Date().toISOString(), metadata = {}) {
   if (!Array.isArray(records)) throw new Error("Microsoft Graph response lacks a value array.");
   const seen = new Set();
   const items = [];
@@ -74,5 +74,10 @@ export function normalizeMessages(records, generatedAt = new Date().toISOString(
     });
   }
   items.sort((a, b) => String(b.lastModifiedDateTime ?? "").localeCompare(String(a.lastModifiedDateTime ?? "")));
-  return { generatedAt, count: items.length, items };
+  return {
+    generatedAt,
+    count: items.length,
+    ...metadata,
+    items
+  };
 }

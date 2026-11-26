@@ -245,6 +245,7 @@
     <h2 id="h-load">Data</h2>
     <p class="hint">Refreshed daily from the Microsoft 365 Roadmap and Message Center.</p>
     <p class="status" id="dataStatus" role="status" aria-live="polite">Loading roadmap data&hellip;</p>
+    <p class="notes" id="freshnessTop"></p>
   </div>
 
   <div class="panel" role="region" aria-labelledby="h-range">
@@ -514,6 +515,7 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
         json.roadmapCount.toLocaleString() + " roadmap, " +
         json.messageCount.toLocaleString() + " Message Center.");
       $("freshness").textContent = "Dataset last refreshed " + when.toLocaleString() + ".";
+      updateFreshness();
       refresh();
     })
     .catch(function (err) {
@@ -526,6 +528,25 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
   function setStatus(el, tone, msg) {
     el.textContent = msg;
     if (tone) el.setAttribute("data-tone", tone); else el.removeAttribute("data-tone");
+  }
+
+  function updateFreshness() {
+    var lines = [];
+    if (DATA && DATA.generatedAt) {
+      lines.push("Public dataset refreshed " + new Date(DATA.generatedAt).toLocaleString() + ".");
+    }
+    if (GCC_DATA && GCC_DATA.generatedAt) {
+      lines.push("GCC roadmap snapshot " + new Date(GCC_DATA.generatedAt).toLocaleString() + ".");
+    }
+    if (GCC_MC_DATA && GCC_MC_DATA.generatedAt) {
+      var mcLine = "GCC Message Center snapshot " + new Date(GCC_MC_DATA.generatedAt).toLocaleString() + ".";
+      if (GCC_MC_DATA.tenantLabel) mcLine += " Tenant: " + GCC_MC_DATA.tenantLabel + ".";
+      if (Number.isFinite(GCC_MC_DATA.fetchedCount)) mcLine += " Graph records fetched: " + GCC_MC_DATA.fetchedCount + ".";
+      lines.push(mcLine);
+    }
+    var text = lines.join(" ");
+    if ($("freshnessTop")) $("freshnessTop").textContent = text;
+    if ($("freshness")) $("freshness").textContent = text;
   }
 
   function isGcc(scope) { return Object.hasOwn(GCC_SCOPES, scope); }
@@ -548,6 +569,7 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
             })) throw new Error("Invalid GCC snapshot");
         GCC_DATA = json;
         gccLoadState = "ready";
+        updateFreshness();
         refresh();
       })
       .catch(function (error) {
@@ -574,6 +596,7 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
             })) throw new Error("Invalid Message Center snapshot");
         GCC_MC_DATA = json;
         gccMcLoadState = "ready";
+        updateFreshness();
         refresh();
       })
       .catch(function (error) {
@@ -823,6 +846,8 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
       } else if (whenMc) {
         setStatus($("gccMcStatus"), staleMc ? "warn" : "ok",
           GCC_MC_DATA.count + " Copilot-relevant Message Center notice(s) from your tenant. Snapshot: " + whenMc.toLocaleString() +
+          (GCC_MC_DATA.tenantLabel ? ". Tenant: " + GCC_MC_DATA.tenantLabel : "") +
+          (Number.isFinite(GCC_MC_DATA.fetchedCount) ? ". Graph records fetched: " + GCC_MC_DATA.fetchedCount : "") +
           (staleMc ? ". More than 3 days old. Recheck the admin center before sharing." : "."));
       } else if (gccMcLoadState === "error") {
         setStatus($("gccMcStatus"), "err", "Real Message Center data is unavailable. No other feed is substituted.");

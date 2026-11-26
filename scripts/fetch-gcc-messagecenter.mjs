@@ -51,8 +51,17 @@ function readSecrets() {
     GCC_MC_CLIENT_ID: clientId,
     GCC_MC_CERT_PEM: certPem,
     GCC_MC_PRIVATE_KEY_PEM: privateKeyPem,
+    GCC_MC_TENANT_LABEL: tenantLabel,
   } = process.env;
-  return { tenantId, clientId, certPem, privateKeyPem };
+  return { tenantId, clientId, certPem, privateKeyPem, tenantLabel };
+}
+
+function tenantHint(tenantId, tenantLabel) {
+  if (tenantLabel && String(tenantLabel).trim()) return String(tenantLabel).trim();
+  const raw = String(tenantId || "").trim();
+  if (!raw) return "configured tenant";
+  if (raw.length <= 8) return raw;
+  return `${raw.slice(0, 8)}...${raw.slice(-4)}`;
 }
 
 async function fetchAllMessages(token) {
@@ -76,7 +85,7 @@ async function fetchAllMessages(token) {
 }
 
 async function main() {
-  const { tenantId, clientId, certPem, privateKeyPem } = readSecrets();
+  const { tenantId, clientId, certPem, privateKeyPem, tenantLabel } = readSecrets();
   if (!tenantId || !clientId || !certPem || !privateKeyPem) {
     console.log("GCC_MC_* secrets are not configured yet; skipping real Message Center fetch.");
     return;
@@ -84,7 +93,11 @@ async function main() {
 
   const token = await acquireGraphToken({ tenantId, clientId, certPem, privateKeyPem });
   const records = await fetchAllMessages(token);
-  const payload = normalizeMessages(records);
+  const payload = normalizeMessages(records, new Date().toISOString(), {
+    tenantLabel: tenantHint(tenantId, tenantLabel),
+    fetchedCount: records.length,
+    source: "microsoft-graph-admin-serviceAnnouncement-messages"
+  });
 
   await mkdir(dirname(fileURLToPath(OUTPUT)), { recursive: true });
   const temp = new URL("./gcc-messagecenter.json.tmp", OUTPUT);

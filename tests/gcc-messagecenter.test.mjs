@@ -37,15 +37,17 @@ const record = {
 };
 
 test("normalizeMessages keeps only Copilot-relevant, well-formed records and dedupes", () => {
-  const { count, items } = normalizeMessages([
+  const { count, items, tenantLabel, fetchedCount } = normalizeMessages([
     record,
     {
       ...record, id: "MC999999", title: "Unrelated Exchange change", services: ["Exchange Online"], tags: [],
       body: { content: "<p>Routine Exchange Online mailbox quota change.</p>" },
     },
     record, // duplicate id, should be dropped
-  ]);
+  ], "2026-11-26T00:00:00.000Z", { tenantLabel: "Gov47", fetchedCount: 123 });
   assert.equal(count, 1);
+  assert.equal(tenantLabel, "Gov47");
+  assert.equal(fetchedCount, 123);
   assert.equal(items[0].key, "MC123456");
   assert.equal(items[0].referenceId, "123456");
   assert.match(items[0].body, /rolling out a new Copilot summarization feature/);

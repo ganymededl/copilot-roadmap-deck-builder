@@ -105,6 +105,7 @@ selecting a GCC cloud to use it.
    | `GCC_MC_CLIENT_ID` | Application (client) ID from step 1 |
    | `GCC_MC_CERT_PEM` | Contents of `cert.pem` |
    | `GCC_MC_PRIVATE_KEY_PEM` | Contents of `key.pem` |
+   | `GCC_MC_TENANT_LABEL` (optional) | Friendly tenant label shown on-page (for example `Gov47`) |
 
 6. Re-run the **Refresh roadmap data** workflow (Actions tab →
    **Run workflow**). If the secrets aren't set yet, the job logs a notice and
@@ -116,6 +117,11 @@ credentials with certificate" flow, implemented in
 dependencies). It signs a short-lived JWT with your private key, trades it for
 a Graph app-only token, and calls
 `GET /admin/serviceAnnouncement/messages`.
+
+To confirm daily refresh on the live page:
+1. Check the **Data** panel for the public snapshot timestamp.
+2. Switch to **Cloud → Applies to GCC Moderate** and **Sources → Real Message Center (your GCC Moderate tenant)**.
+3. Check the status line for the Message Center snapshot time, tenant label, and fetched-record count.
 
 ## Not an official Microsoft deliverable
 

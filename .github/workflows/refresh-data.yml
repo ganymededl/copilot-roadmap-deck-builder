@@ -49,6 +49,7 @@ jobs:
           GCC_MC_CLIENT_ID: ${{ secrets.GCC_MC_CLIENT_ID }}
           GCC_MC_CERT_PEM: ${{ secrets.GCC_MC_CERT_PEM }}
           GCC_MC_PRIVATE_KEY_PEM: ${{ secrets.GCC_MC_PRIVATE_KEY_PEM }}
+          GCC_MC_TENANT_LABEL: ${{ secrets.GCC_MC_TENANT_LABEL }}
         run: node scripts/fetch-gcc-messagecenter.mjs
 
       - name: Fetch roadmap + Message Center data
