@@ -10,7 +10,11 @@ on:
       - "scripts/fetch-data.mjs"
       - "scripts/fetch-gcc-roadmap.mjs"
       - "scripts/gcc.mjs"
+      - "scripts/fetch-gcc-messagecenter.mjs"
+      - "scripts/gcc-messagecenter.mjs"
+      - "scripts/graph-cba.mjs"
       - "tests/gcc.test.mjs"
+      - "tests/gcc-messagecenter.test.mjs"
       - ".github/workflows/refresh-data.yml"
 
 permissions:
@@ -31,11 +35,21 @@ jobs:
           node-version: "20"
 
       - name: Test GCC filters and normalization
-        run: node --test tests/gcc.test.mjs
+        run: node --test tests/gcc.test.mjs tests/gcc-messagecenter.test.mjs
 
       - name: Fetch Microsoft GCC Roadmap data
         id: gcc
         run: node scripts/fetch-gcc-roadmap.mjs
+
+      - name: Fetch real GCC Moderate Message Center notices
+        id: gcc_mc
+        if: ${{ !cancelled() }}
+        env:
+          GCC_MC_TENANT_ID: ${{ secrets.GCC_MC_TENANT_ID }}
+          GCC_MC_CLIENT_ID: ${{ secrets.GCC_MC_CLIENT_ID }}
+          GCC_MC_CERT_PEM: ${{ secrets.GCC_MC_CERT_PEM }}
+          GCC_MC_PRIVATE_KEY_PEM: ${{ secrets.GCC_MC_PRIVATE_KEY_PEM }}
+        run: node scripts/fetch-gcc-messagecenter.mjs
 
       - name: Fetch roadmap + Message Center data
         id: legacy
@@ -57,14 +71,16 @@ jobs:
           "
 
       - name: Commit if changed
-        if: ${{ !cancelled() && (steps.verify_legacy.outcome == 'success' || steps.gcc.outcome == 'success') }}
+        if: ${{ !cancelled() && (steps.verify_legacy.outcome == 'success' || steps.gcc.outcome == 'success' || steps.gcc_mc.outcome == 'success') }}
         env:
           GCC_RESULT: ${{ steps.gcc.outcome }}
+          GCC_MC_RESULT: ${{ steps.gcc_mc.outcome }}
           LEGACY_RESULT: ${{ steps.verify_legacy.outcome }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ "$GCC_RESULT" = success ]; then git add data/gcc-roadmap.json; fi
+          if [ "$GCC_MC_RESULT" = success ]; then git add data/gcc-messagecenter.json; fi
           if [ "$LEGACY_RESULT" = success ]; then git add data/roadmap.json; fi
           if git diff --cached --quiet; then
             echo "No data changes."

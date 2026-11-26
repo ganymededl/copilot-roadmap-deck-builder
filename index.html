@@ -331,6 +331,11 @@
       <p id="gccStatus" class="status" role="status"></p>
       <button type="button" class="secondary" id="gccRetry" hidden>Retry GCC data</button>
     </div>
+    <div class="scope-box notes" id="gccMcGuidance" hidden>
+      <p><strong>Real Message Center notices from your GCC Moderate tenant.</strong> These are full notice bodies pulled daily from this tenant's own Message Center via Microsoft Graph (app-only, certificate authentication), filtered to notices that mention Copilot. Unlike every other data source here, this content is tenant-specific and is committed in full to this public repository and site.</p>
+      <p id="gccMcStatus" class="status" role="status"></p>
+      <button type="button" class="secondary" id="gccMcRetry" hidden>Retry Message Center data</button>
+    </div>
     <div class="scope-box notes" id="agencyPanel" hidden>
       <h3>Agency Message Center references</h3>
       <p id="agencyHelp">Optional internal appendix. Enter only notice IDs approved for inclusion. Do not enter notice text, credentials, or tenant details. Nothing you enter is sent to the builder or saved by the page. References are not roadmap records and do not affect the date or keyword counts.</p>
@@ -419,9 +424,12 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
   ];
   var FALLBACK_SECTION = "Other Updates";
   var GCC_AGENCY_SOURCE = "gcc-agency";
+  var GCC_MC_SOURCE = "gcc-messagecenter";
   var GCC_MAX_AGE = 3 * 24 * 60 * 60 * 1000;
   var GCC_DATA = null;
   var gccLoadState = "idle";
+  var GCC_MC_DATA = null;
+  var gccMcLoadState = "idle";
   var agencies = [];
   var previousCloud = "all", previousSource = "both";
   var isBuilding = false;
@@ -549,6 +557,32 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
       });
   }
 
+  function loadGccMessageCenter() {
+    if (gccMcLoadState === "loading" || GCC_MC_DATA) return;
+    gccMcLoadState = "loading";
+    refresh();
+    fetch("data/gcc-messagecenter.json", { cache: "no-cache" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (json) {
+        if (!Array.isArray(json.items) || !Number.isFinite(Date.parse(json.generatedAt)) ||
+            json.count !== json.items.length ||
+            !json.items.every(function (item) {
+              return /^MC\d+$/i.test(item.key) && typeof item.link === "string";
+            })) throw new Error("Invalid Message Center snapshot");
+        GCC_MC_DATA = json;
+        gccMcLoadState = "ready";
+        refresh();
+      })
+      .catch(function (error) {
+        console.error("GCC Message Center data unavailable:", error);
+        gccMcLoadState = "error";
+        refresh();
+      });
+  }
+
   function setupCloud() {
     var scope = $("cloudFilter").value;
     var gcc = isGcc(scope);
@@ -561,9 +595,12 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
       var agencyOption = source.querySelector('option[value="' + GCC_AGENCY_SOURCE + '"]');
       if (gcc && !agencyOption) source.add(new Option("Roadmap + agency-verified references", GCC_AGENCY_SOURCE));
       if (!gcc && agencyOption) agencyOption.remove();
+      var mcOption = source.querySelector('option[value="' + GCC_MC_SOURCE + '"]');
+      if (gcc && !mcOption) source.add(new Option("Real Message Center (your GCC Moderate tenant)", GCC_MC_SOURCE));
+      if (!gcc && mcOption) mcOption.remove();
       source.value = gcc ? "roadmap" : previousSource;
       $("sourceHint").textContent = gcc
-        ? "GCC exports exclude public Message Center posts. You can add references you verify in your own tenant."
+        ? "GCC Roadmap exports exclude public Message Center posts. Choose the real Message Center option to use notices pulled from your own tenant instead."
         : "Message Center items add admin-facing change notices.";
       $("keywordHint").textContent = gcc
         ? "Search by product, title, or Roadmap ID. The Copilot keyword also checks whether the source description mentions Copilot."
@@ -572,6 +609,7 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
     previousCloud = scope;
     refresh();
     if (gcc && gccLoadState === "idle") loadGcc();
+    if (gcc && gccMcLoadState === "idle") loadGccMessageCenter();
   }
 
   function updateAgencyList(scope) {
@@ -621,17 +659,35 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
   });
   $("cloudFilter").addEventListener("change", setupCloud);
   $("gccRetry").addEventListener("click", loadGcc);
+  $("gccMcRetry").addEventListener("click", loadGccMessageCenter);
 
   // ---------------------------------------------------------------- filtering
   function currentMode() {
     return document.querySelector('input[name="mode"]:checked').value;
   }
 
+  function shapeGccMcItem(raw) {
+    return {
+      key: raw.key, kind: "Message Center", referenceId: raw.referenceId,
+      title: raw.title,
+      product: (raw.services && raw.services.length) ? raw.services.join(", ") : "Microsoft 365 Copilot",
+      status: raw.isMajorChange ? "Major Change" : "Update",
+      description: raw.body,
+      releaseMonth: null,
+      createdDate: raw.startDateTime || raw.lastModifiedDateTime,
+      modifiedDate: raw.lastModifiedDateTime,
+      copilotMention: true,
+      link: raw.link
+    };
+  }
+
   function build() {
     var startStr = startEl.value, endStr = endEl.value;
     var scope = $("cloudFilter").value;
     var gcc = isGcc(scope);
-    var dataset = gcc ? GCC_DATA : DATA;
+    var srcFilter = $("sourceFilter").value;
+    var usingGccMc = gcc && srcFilter === GCC_MC_SOURCE;
+    var dataset = usingGccMc ? GCC_MC_DATA : (gcc ? GCC_DATA : DATA);
     if (!dataset) return null;
     if (!startStr || !endStr) return { error: "Choose both a start date and an end date." };
     if (startStr < MIN_DATE || endStr > MAX_DATE) return { error: "Choose dates within the supported range." };
@@ -642,7 +698,6 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
     if (start > end) return { error: "The start date is after the end date." };
 
     var mode = currentMode();
-    var srcFilter = $("sourceFilter").value;
     var keywords = $("keywords").value.split(",")
       .map(function (k) { return k.trim().toLowerCase(); })
       .filter(Boolean);
@@ -651,18 +706,18 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
     var matched = [];
 
     for (var i = 0; i < dataset.items.length; i++) {
-      var it = dataset.items[i];
-      var tags = gcc ? normalizeCloudTags(it.cloudInstances) : [];
+      var it = usingGccMc ? shapeGccMcItem(dataset.items[i]) : dataset.items[i];
+      var tags = (gcc && !usingGccMc) ? normalizeCloudTags(it.cloudInstances) : [];
 
-      if (gcc && (it.kind !== "Roadmap" || !matchesGcc(tags, scope))) continue;
-      if (srcFilter === "roadmap" && it.kind !== "Roadmap") continue;
-      if (srcFilter === "messages" && it.kind !== "Message Center") continue;
+      if (gcc && !usingGccMc && (it.kind !== "Roadmap" || !matchesGcc(tags, scope))) continue;
+      if (!gcc && srcFilter === "roadmap" && it.kind !== "Roadmap") continue;
+      if (!gcc && srcFilter === "messages" && it.kind !== "Message Center") continue;
 
       if (keywords.length) {
-        var hay = (it.product + " " + it.title + (gcc ? "" : " " + it.description)).toLowerCase();
+        var hay = (it.product + " " + it.title + ((gcc && !usingGccMc) ? "" : " " + it.description)).toLowerCase();
         var hit = false;
         for (var k = 0; k < keywords.length; k++) {
-          if (hay.indexOf(keywords[k]) !== -1 || (gcc &&
+          if (hay.indexOf(keywords[k]) !== -1 || ((gcc && !usingGccMc) &&
               (keywords[k] === it.referenceId || (keywords[k] === "copilot" && it.copilotMention)))) { hit = true; break; }
         }
         if (!hit) continue;
@@ -670,7 +725,7 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
 
       var isNew = false;
       if (mode === "release") {
-        if (gcc && it.status === "Cancelled") continue;
+        if (gcc && !usingGccMc && it.status === "Cancelled") continue;
         if (!it.releaseMonth) continue;
         if (it.releaseMonth < startMonth || it.releaseMonth > endMonth) continue;
         var c0 = it.createdDate ? new Date(it.createdDate) : null;
@@ -687,10 +742,11 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
       matched.push({
         key: it.key, kind: it.kind, referenceId: it.referenceId,
         title: it.title, product: it.product, status: it.status,
-        description: gcc ? (it.platforms?.length ? "Platforms: " + it.platforms.join(", ") : "") : it.description,
-        releaseDate: gcc ? monthLabel(it.releaseMonth) : it.releaseDate,
-        gccTag: gcc ? (tags.length === 1 ? "GCC-only record" : "GCC + other clouds") : "",
-        gccNote: gcc ? it.gccNote : "",
+        description: (gcc && !usingGccMc) ? (it.platforms?.length ? "Platforms: " + it.platforms.join(", ") : "") : it.description,
+        releaseDate: (gcc && !usingGccMc) ? monthLabel(it.releaseMonth) : it.releaseDate,
+        gccTag: (gcc && !usingGccMc) ? (tags.length === 1 ? "GCC-only record" : "GCC + other clouds") : "",
+        gccNote: (gcc && !usingGccMc) ? it.gccNote : "",
+        link: usingGccMc ? it.link : null,
         isNew: isNew, section: sectionFor(it.product + " " + it.title)
       });
     }
@@ -715,7 +771,7 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
 
     return {
       mode: mode,
-      gcc: gcc, cloudLabel: GCC_SCOPES[scope], scope: scope,
+      gcc: gcc, usingGccMc: usingGccMc, cloudLabel: GCC_SCOPES[scope], scope: scope,
       stale: gcc && Date.now() - Date.parse(dataset.generatedAt) > GCC_MAX_AGE,
       agencyRefs: gcc && srcFilter === GCC_AGENCY_SOURCE ? matchingAgencyReferences(agencies, scope) : [],
       startDate: startStr, endDate: endStr,
@@ -724,7 +780,9 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
       newCount: newCount,
       updatedCount: matched.length - newCount,
       sections: sections,
-      sources: gcc ? ["Microsoft 365 Roadmap (first-party public feed)"] : dataset.sources,
+      sources: usingGccMc
+        ? ["Your Microsoft 365 GCC Moderate tenant Message Center (Microsoft Graph, app-only, filtered to Copilot-relevant notices)"]
+        : (gcc ? ["Microsoft 365 Roadmap (first-party public feed)"] : dataset.sources),
       generatedAt: new Date().toISOString(),
       dataGeneratedAt: dataset.generatedAt
     };
@@ -739,6 +797,7 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
   function refresh() {
     var scope = $("cloudFilter").value;
     var gcc = isGcc(scope);
+    var usingGccMc = gcc && $("sourceFilter").value === GCC_MC_SOURCE;
     $("gccGuidance").hidden = !gcc;
     $("gccRetry").hidden = !gcc || gccLoadState !== "error";
     if (gcc) {
@@ -754,14 +813,32 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
         setStatus($("gccStatus"), null, "Loading Microsoft GCC Roadmap data\u2026");
       }
     }
+    $("gccMcGuidance").hidden = !usingGccMc;
+    $("gccMcRetry").hidden = !usingGccMc || gccMcLoadState !== "error";
+    if (usingGccMc) {
+      var whenMc = GCC_MC_DATA && new Date(GCC_MC_DATA.generatedAt);
+      var staleMc = whenMc && Date.now() - whenMc.getTime() > GCC_MAX_AGE;
+      if (whenMc && GCC_MC_DATA.count === 0) {
+        setStatus($("gccMcStatus"), "warn", "No Copilot-relevant Message Center notices are published yet. Either none exist right now in this tenant, or the daily job hasn't run with its secrets configured. See README.md.");
+      } else if (whenMc) {
+        setStatus($("gccMcStatus"), staleMc ? "warn" : "ok",
+          GCC_MC_DATA.count + " Copilot-relevant Message Center notice(s) from your tenant. Snapshot: " + whenMc.toLocaleString() +
+          (staleMc ? ". More than 3 days old. Recheck the admin center before sharing." : "."));
+      } else if (gccMcLoadState === "error") {
+        setStatus($("gccMcStatus"), "err", "Real Message Center data is unavailable. No other feed is substituted.");
+      } else {
+        setStatus($("gccMcStatus"), null, "Loading Message Center data from your tenant\u2026");
+      }
+    }
     var res = build();
     updateAgencyList(scope);
     var host = $("preview");
     var ready = res && !res.error && res.totalItems > 0;
     var libraryReady = typeof window.PptxGenJS === "function";
     $("buildBtn").disabled = !ready || !libraryReady || isBuilding;
+    var dataUnavailable = usingGccMc ? gccMcLoadState === "error" : ((gcc && gccLoadState === "error") || (!gcc && publicLoadError));
     if (!isBuilding) {
-      if ((gcc && gccLoadState === "error") || (!gcc && publicLoadError)) {
+      if (dataUnavailable) {
         setStatus($("buildStatus"), "err", "Data unavailable.");
       } else if (!libraryReady) {
         setStatus($("buildStatus"), "err", "PowerPoint generation could not load. Reload or ask your IT team if the script is blocked.");
@@ -770,8 +847,7 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
       }
     }
     if (!res) {
-      host.textContent = (gcc && gccLoadState === "error") || (!gcc && publicLoadError)
-        ? "Data unavailable." : "Waiting for data\u2026";
+      host.textContent = dataUnavailable ? "Data unavailable." : "Waiting for data\u2026";
       return;
     }
 
@@ -812,25 +888,36 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
     if (res.gcc) {
       var caption = document.createElement("p");
       caption.className = "notes";
-      caption.textContent = res.cloudLabel + " \u00b7 " + res.agencyRefs.length +
-        " agency Message Center reference(s) in the internal appendix, not in the counts above.";
+      caption.textContent = res.usingGccMc
+        ? res.cloudLabel + " \u00b7 real Message Center notices from your tenant \u00b7 full notice text below and in the generated deck."
+        : res.cloudLabel + " \u00b7 " + res.agencyRefs.length +
+          " agency Message Center reference(s) in the internal appendix, not in the counts above.";
       host.prepend(caption);
       var detail = document.createElement("details");
       var summary = document.createElement("summary");
-      summary.textContent = "Review matching Roadmap records";
+      summary.textContent = res.usingGccMc ? "Review matching Message Center notices" : "Review matching Roadmap records";
       var list = document.createElement("ul");
       list.className = "item-list notes";
       res.sections.forEach(function (section) {
         section.items.forEach(function (item) {
           var li = document.createElement("li");
           var link = document.createElement("a");
-          link.href = roadmapLink(item.referenceId);
+          link.href = res.usingGccMc ? item.link : roadmapLink(item.referenceId);
           link.target = "_blank";
           link.rel = "noopener noreferrer";
           link.textContent = item.title + " (#" + item.referenceId + ")";
-          li.append(link, " \u2014 " + item.gccTag + " \u00b7 " + item.status +
-            (item.releaseDate ? " \u00b7 GA target " + item.releaseDate : "") +
-            (item.gccNote ? " \u2014 " + item.gccNote : ""));
+          if (res.usingGccMc) {
+            li.append(link, " \u2014 " + item.status);
+            var body = document.createElement("p");
+            body.style.whiteSpace = "pre-line";
+            body.style.margin = ".35rem 0 .75rem";
+            body.textContent = item.description;
+            li.appendChild(body);
+          } else {
+            li.append(link, " \u2014 " + item.gccTag + " \u00b7 " + item.status +
+              (item.releaseDate ? " \u00b7 GA target " + item.releaseDate : "") +
+              (item.gccNote ? " \u2014 " + item.gccNote : ""));
+          }
           list.appendChild(li);
         });
       });
@@ -965,7 +1052,7 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
           if (item.gccTag) {
             sl.addText(item.gccTag, { x: 6.05, y: y + 0.04, w: 3.2, h: 0.28, fontFace: "Calibri", fontSize: 10, color: MUTED, bold: true, margin: 0 });
           }
-          var refUrl = data.gcc ? roadmapLink(item.referenceId) : null;
+          var refUrl = item.kind === "Message Center" ? item.link : (data.gcc ? roadmapLink(item.referenceId) : null);
           sl.addText(ref, {
             x: W - M - 1.6, y: y + 0.04, w: 1.6, h: 0.28, fontFace: "Calibri", fontSize: 9, color: MUTED,
             align: "right", valign: "middle", margin: 0, ...(refUrl ? { hyperlink: { url: refUrl } } : {})
@@ -1013,22 +1100,32 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
       "Date range: " + data.startDate + " to " + data.endDate + "  \u2022  Keywords: " + data.keywords.join(", "),
       "Source data refreshed: " + new Date(data.dataGeneratedAt).toLocaleString("en-US")
     ]);
-    if (data.gcc) {
+    if (data.gcc && !data.usingGccMc) {
       bullets.push(
         data.cloudLabel + ": " + (data.scope === "gcc-only" ? "the record has only the GCC tag." : "the record explicitly includes GCC, even if it also lists other clouds."),
         "Cloud tags describe records, not feature exclusivity. Targets don't confirm tenant availability. Check Health > Message center, licensing, and policy in your GCC Moderate tenant.",
-        "Public Message Center posts are excluded from GCC exports." +
+        "Public Message Center posts are excluded from this Roadmap export." +
           (data.agencyRefs.length ? " The appendix contains only agency-confirmed references; they are not counted as roadmap items." : "")
       );
       if (data.stale) bullets.push("Snapshot was more than 3 days old when built. Recheck the official Roadmap before sharing.");
+    } else if (data.usingGccMc) {
+      bullets.push(
+        "These are real Message Center notices pulled daily from this GCC Moderate tenant via Microsoft Graph, filtered to notices that mention Copilot.",
+        "Notice text is reproduced in full from the tenant's own Message Center. Confirm it is appropriate to share before distributing this deck.",
+        "Status for your organization and any rollout percentage should still be verified in the admin center before announcing anything."
+      );
+      if (data.stale) bullets.push("Snapshot was more than 3 days old when built. Recheck the admin center before sharing.");
     }
     sN.addText(bullets.map(function (b, i) {
       return { text: b, options: { bullet: { code: "2022", color: ICE }, breakLine: i < bullets.length - 1, paraSpaceAfter: 14 } };
     }), { x: M, y: 1.45, w: W - M * 2, h: 4.88, fontFace: "Calibri", fontSize: 14, color: WHITE, valign: "top", margin: 0 });
-    if (data.gcc) {
+    if (data.gcc && !data.usingGccMc) {
       sN.addText("Microsoft Roadmap", { x: M, y: 6.55, w: 2.5, h: 0.35, fontFace: "Calibri", fontSize: 13, color: ICE,
         hyperlink: { url: ROADMAP_HOME, color: ICE }, margin: 0 });
       sN.addText("Agency Message Center", { x: M + 2.75, y: 6.55, w: 3.2, h: 0.35, fontFace: "Calibri", fontSize: 13, color: ICE,
+        hyperlink: { url: MESSAGE_CENTER, color: ICE }, margin: 0 });
+    } else if (data.usingGccMc) {
+      sN.addText("Microsoft 365 admin center", { x: M, y: 6.55, w: 3.2, h: 0.35, fontFace: "Calibri", fontSize: 13, color: ICE,
         hyperlink: { url: MESSAGE_CENTER, color: ICE }, margin: 0 });
     }
 
