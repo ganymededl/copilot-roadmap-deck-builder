@@ -550,6 +550,9 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
   }
 
   function isGcc(scope) { return Object.hasOwn(GCC_SCOPES, scope); }
+  function isGccMessageSource(sourceValue) {
+    return sourceValue === "messages" || sourceValue === GCC_MC_SOURCE;
+  }
 
   function loadGcc() {
     if (gccLoadState === "loading" || GCC_DATA) return;
@@ -611,19 +614,27 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
     var gcc = isGcc(scope);
     var wasGcc = isGcc(previousCloud);
     var source = $("sourceFilter");
+    var messagesOption = source.querySelector('option[value="messages"]');
     if (gcc !== wasGcc) {
       if (gcc) previousSource = source.value;
       source.options[0].hidden = source.options[0].disabled = gcc;
-      source.options[2].hidden = source.options[2].disabled = gcc;
       var agencyOption = source.querySelector('option[value="' + GCC_AGENCY_SOURCE + '"]');
       if (gcc && !agencyOption) source.add(new Option("Roadmap + agency-verified references", GCC_AGENCY_SOURCE));
       if (!gcc && agencyOption) agencyOption.remove();
       var mcOption = source.querySelector('option[value="' + GCC_MC_SOURCE + '"]');
-      if (gcc && !mcOption) source.add(new Option("Real Message Center (your GCC Moderate tenant)", GCC_MC_SOURCE));
-      if (!gcc && mcOption) mcOption.remove();
-      source.value = gcc ? "roadmap" : previousSource;
+      if (mcOption) mcOption.remove();
+      if (messagesOption) {
+        messagesOption.hidden = false;
+        messagesOption.disabled = false;
+        messagesOption.textContent = gcc ? "Message Center only (your GCC Moderate tenant)" : "Message Center only";
+      }
+      if (gcc && (previousSource === "messages" || previousSource === GCC_MC_SOURCE)) {
+        source.value = "messages";
+      } else {
+        source.value = gcc ? "roadmap" : previousSource;
+      }
       $("sourceHint").textContent = gcc
-        ? "GCC Roadmap exports exclude public Message Center posts. Choose the real Message Center option to use notices pulled from your own tenant instead."
+        ? "In GCC, \"Message Center only\" uses notices pulled from your own tenant (not public Roadmap records)."
         : "Message Center items add admin-facing change notices.";
       $("keywordHint").textContent = gcc
         ? "Search by product, title, or Roadmap ID. The Copilot keyword also checks whether the source description mentions Copilot."
@@ -709,7 +720,7 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
     var scope = $("cloudFilter").value;
     var gcc = isGcc(scope);
     var srcFilter = $("sourceFilter").value;
-    var usingGccMc = gcc && srcFilter === GCC_MC_SOURCE;
+    var usingGccMc = gcc && isGccMessageSource(srcFilter);
     var dataset = usingGccMc ? GCC_MC_DATA : (gcc ? GCC_DATA : DATA);
     if (!dataset) return null;
     if (!startStr || !endStr) return { error: "Choose both a start date and an end date." };
@@ -820,7 +831,7 @@ import { ROADMAP_HOME, MESSAGE_CENTER, GCC_SCOPES, matchesGcc, normalizeCloudTag
   function refresh() {
     var scope = $("cloudFilter").value;
     var gcc = isGcc(scope);
-    var usingGccMc = gcc && $("sourceFilter").value === GCC_MC_SOURCE;
+    var usingGccMc = gcc && isGccMessageSource($("sourceFilter").value);
     $("gccGuidance").hidden = !gcc;
     $("gccRetry").hidden = !gcc || gccLoadState !== "error";
     if (gcc) {
